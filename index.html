@@ -226,11 +226,21 @@
                 <div id="role-badge" class="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full font-medium"></div>
             </div>
             
-            <div class="flex gap-2 mb-4 overflow-x-auto pb-2 hide-scrollbar">
-                <button class="filter-btn active bg-blue-100 text-blue-700 px-4 py-1.5 rounded-full text-sm whitespace-nowrap relative" data-filter="all">全部</button>
-                <button class="filter-btn bg-gray-100 text-gray-600 px-4 py-1.5 rounded-full text-sm whitespace-nowrap relative" data-filter="pending">待處理 <span id="badge-filter-pending" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full hidden">0</span></button>
-                <button class="filter-btn bg-gray-100 text-gray-600 px-4 py-1.5 rounded-full text-sm whitespace-nowrap relative" data-filter="active">處理中 <span id="badge-filter-active" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full hidden">0</span></button>
-                <button class="filter-btn bg-gray-100 text-gray-600 px-4 py-1.5 rounded-full text-sm whitespace-nowrap relative" data-filter="review">待驗收 <span id="badge-filter-review" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full hidden">0</span></button>
+            <!-- 修正：將 pt-2 改為按鈕本身的 mt-2，並為徽章加上白色邊框，徹底避開 overflow 裁切 -->
+            <div class="flex gap-3 mb-4 overflow-x-auto pb-2 px-1 hide-scrollbar">
+                <button class="filter-btn active bg-blue-100 text-blue-700 px-4 py-1.5 rounded-full text-sm whitespace-nowrap relative mt-2" data-filter="all">全部</button>
+                <button class="filter-btn bg-gray-100 text-gray-600 px-4 py-1.5 rounded-full text-sm whitespace-nowrap relative mt-2" data-filter="pending">
+                    待處理 
+                    <span id="badge-filter-pending" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold w-[18px] h-[18px] flex items-center justify-center rounded-full hidden shadow-sm border border-white box-content">0</span>
+                </button>
+                <button class="filter-btn bg-gray-100 text-gray-600 px-4 py-1.5 rounded-full text-sm whitespace-nowrap relative mt-2" data-filter="active">
+                    處理中 
+                    <span id="badge-filter-active" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold w-[18px] h-[18px] flex items-center justify-center rounded-full hidden shadow-sm border border-white box-content">0</span>
+                </button>
+                <button class="filter-btn bg-gray-100 text-gray-600 px-4 py-1.5 rounded-full text-sm whitespace-nowrap relative mt-2" data-filter="review">
+                    待驗收 
+                    <span id="badge-filter-review" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold w-[18px] h-[18px] flex items-center justify-center rounded-full hidden shadow-sm border border-white box-content">0</span>
+                </button>
             </div>
 
             <!-- Search and Filter Bar -->
@@ -577,6 +587,24 @@
         
         let filters = { status: 'all', keyword: '', category: '', sort: 'desc' };
 
+        // 綁定案件列表的上方狀態過濾按鈕 (解決無法點擊的問題)
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const targetBtn = e.currentTarget;
+                // 重置所有按鈕樣式
+                document.querySelectorAll('.filter-btn').forEach(b => { 
+                    b.classList.replace('bg-blue-100', 'bg-gray-100'); 
+                    b.classList.replace('text-blue-700', 'text-gray-600'); 
+                });
+                // 點亮當前按鈕
+                targetBtn.classList.replace('bg-gray-100', 'bg-blue-100');
+                targetBtn.classList.replace('text-gray-600', 'text-blue-700');
+                // 更新過濾條件並重新渲染
+                filters.status = targetBtn.dataset.filter;
+                renderTicketsList();
+            });
+        });
+
         const CATEGORIES = {
             'SES': [
                 { id: 'SES_SIGNAGE', label: 'SES招牌修繕' },
@@ -725,54 +753,26 @@
             showLoader(false);
         });
 
-        // 獨立的「註冊」邏輯
-        document.getElementById('btn-register-email').addEventListener('click', async () => {
-            const email = document.getElementById('login-email').value.trim();
-            const pwd = document.getElementById('login-password').value;
-            if(!email || !pwd) return showToast('請填寫Email與密碼', 'error');
-            if(pwd.length < 6) return showToast('密碼長度至少需要 6 個字元', 'error');
-            
+        document.getElementById('btn-logout').addEventListener('click', async () => {
             showLoader(true);
             try {
-                await createUserWithEmailAndPassword(auth, email, pwd);
-                showToast('註冊成功！請等待管理員開通權限。', 'success');
+                await signOut(auth);
+                showToast('已成功登出', 'success');
             } catch (err) {
-                if (err.code === 'auth/email-already-in-use') {
-                    showToast('註冊失敗: 此 Email 已經被註冊過囉！', 'error');
-                } else {
-                    showToast('註冊失敗: ' + err.message, 'error');
-                }
-            }
-            showLoader(false);
-        });
-        
-        document.getElementById('btn-login-google').addEventListener('click', async () => {
-            showLoader(true);
-            try { const provider = new GoogleAuthProvider(); await signInWithPopup(auth, provider); } 
-            catch (err) { showToast('Google登入失敗', 'error'); }
-            showLoader(false);
-        });
-        
-        document.getElementById('btn-forgot-password').addEventListener('click', async () => {
-            const email = document.getElementById('login-email').value.trim();
-            if(!email) return showToast('請先填寫上方的 Email，系統才能寄送重設信！', 'error');
-            
-            showLoader(true);
-            try {
-                await sendPasswordResetEmail(auth, email);
-                showToast('密碼重設信已發送！請至您的信箱收信。', 'success');
-            } catch (err) {
-                if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-                    showToast('找不到此 Email 或尚未註冊密碼。', 'error');
-                } else {
-                    showToast('發送失敗: ' + err.message, 'error');
-                }
+                console.error(err);
+                showToast('登出失敗', 'error');
             }
             showLoader(false);
         });
 
-        document.getElementById('btn-logout').addEventListener('click', () => {
-            renderTicketsList();
+        document.getElementById('btn-logout-pending').addEventListener('click', async () => {
+            showLoader(true);
+            try {
+                await signOut(auth);
+            } catch (err) {
+                console.error(err);
+            }
+            showLoader(false);
         });
 
         function setupNotificationListener() {
