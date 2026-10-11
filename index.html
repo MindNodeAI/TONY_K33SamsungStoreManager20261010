@@ -2,550 +2,551 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Samsung Cogito Control Tower</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Excel & Mermaid 圖表套件 (使用穩定版 v9.4.3) -->
+    <!-- Excel & Mermaid 圖表套件 -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js"></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', '微軟正黑體', sans-serif; background-color: #f3f4f6; -webkit-tap-highlight-color: transparent; }
         
-        /* 強制隱藏未啟用的視圖，避免 flex 造成的優先級衝突 */
+        /* 視圖切換動畫 */
         .view-section:not(.active) { display: none !important; }
-        .view-section.active { animation: fadeIn 0.2s ease-in-out; }
+        .view-section.active { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        button, select, input { min-height: 44px; }
+        /* 元件互動與微動畫 */
+        button, select, input { min-height: 44px; transition: all 0.15s ease-in-out; }
+        .btn-press:active { transform: scale(0.97); }
         .bottom-nav-item.active { color: #2563eb; font-weight: 600; }
+        .bottom-nav-item { transition: color 0.2s; }
+        
+        /* 安全區適配 (iPhone Notch) */
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+
+        /* Loader */
         .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #2563eb; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* Markdown 與報表排版 */
-        .markdown-body h1 { font-size: 1.5rem; font-weight: 700; color: #1e3a8a; margin-top: 1.5rem; margin-bottom: 0.75rem; }
-        .markdown-body h2 { font-size: 1.25rem; font-weight: 700; color: #2563eb; margin-top: 1.25rem; margin-bottom: 0.5rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.25rem; }
-        .markdown-body h3 { font-size: 1.125rem; font-weight: 600; color: #374151; margin-top: 1rem; margin-bottom: 0.5rem; }
-        .markdown-body p { margin-bottom: 0.75rem; color: #4b5563; font-size: 0.875rem; line-height: 1.5; }
-        .markdown-body ul { list-style-type: disc; margin-left: 1.25rem; margin-bottom: 0.75rem; color: #4b5563; font-size: 0.875rem; }
-        .markdown-body li { margin-bottom: 0.25rem; }
+        /* 報表 Markdown 排版優化 */
+        .markdown-body h1 { font-size: 1.5rem; font-weight: 700; color: #1e3a8a; margin: 1.5rem 0 0.75rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; }
+        .markdown-body h2 { font-size: 1.25rem; font-weight: 700; color: #2563eb; margin: 1.25rem 0 0.5rem; }
+        .markdown-body h3 { font-size: 1.125rem; font-weight: 600; color: #374151; margin: 1rem 0 0.5rem; }
+        .markdown-body p { margin-bottom: 0.75rem; color: #4b5563; font-size: 0.875rem; line-height: 1.6; }
+        .markdown-body ul { list-style-type: disc; margin-left: 1.25rem; margin-bottom: 1rem; color: #4b5563; font-size: 0.875rem; }
+        .markdown-body li { margin-bottom: 0.35rem; }
         .markdown-body strong { font-weight: 700; color: #111827; }
-        .markdown-body table { width: 100%; border-collapse: collapse; margin-top: 1rem; margin-bottom: 1rem; font-size: 0.875rem; }
-        .markdown-body th { background-color: #f3f4f6; border: 1px solid #d1d5db; padding: 0.75rem; text-align: left; font-weight: 600; color: #374151; }
-        .markdown-body td { border: 1px solid #d1d5db; padding: 0.75rem; }
+        .markdown-body table { width: 100%; border-collapse: collapse; margin: 1.25rem 0; font-size: 0.875rem; border-radius: 0.5rem; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .markdown-body th { background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 0.75rem; text-align: left; font-weight: 600; color: #1e293b; }
+        .markdown-body td { border: 1px solid #e2e8f0; padding: 0.75rem; color: #475569; }
+        
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="text-gray-800 antialiased h-screen flex flex-col overflow-hidden">
 
-    <!-- Global Toast & Modal -->
-    <div id="toast-container" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2 w-11/12 max-w-md"></div>
+    <!-- Global Toast -->
+    <div id="toast-container" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2 w-11/12 max-w-md pointer-events-none"></div>
     
-    <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden flex items-center justify-center p-4">
-        <div id="modal-content" class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 transform scale-95 transition-transform duration-200">
-            <h3 id="modal-title" class="text-lg font-bold mb-2"></h3>
-            <p id="modal-message" class="text-gray-600 mb-6 text-sm"></p>
-            <div id="modal-actions" class="flex justify-end gap-3"></div>
-        </div>
-    </div>
-
-    <!-- Full Screen Loader -->
-    <div id="global-loader" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center hidden">
+    <!-- Full Screen Loader (backdrop-blur 提升質感) -->
+    <div id="global-loader" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center hidden">
         <div class="spinner mb-4"></div>
-        <p class="text-gray-500 text-sm">載入中...</p>
+        <p class="text-gray-600 font-medium text-sm">系統處理中...</p>
     </div>
 
-    <!-- Modal: Complete Ticket -->
-    <div id="modal-complete" class="fixed inset-0 bg-black bg-opacity-60 z-40 hidden flex items-end sm:items-center justify-center sm:p-4">
-        <div class="bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full max-w-md flex flex-col max-h-[90vh] transition-transform duration-300">
-            <div class="p-4 border-b flex justify-between items-center sticky top-0 bg-white rounded-t-2xl sm:rounded-t-xl z-10">
+    <!-- Modal: Complete Ticket (完工回報) -->
+    <div id="modal-complete" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden flex items-end sm:items-center justify-center sm:p-4 transition-opacity duration-300">
+        <div class="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]">
+            <div class="p-4 border-b flex justify-between items-center sticky top-0 bg-white rounded-t-2xl z-10">
                 <h3 class="text-lg font-bold text-gray-800">提交完工紀錄</h3>
-                <button onclick="closeModal('modal-complete')" class="text-gray-400 hover:text-gray-600 p-2"><i class="fas fa-times text-xl"></i></button>
+                <button onclick="closeModal('modal-complete')" class="text-gray-400 hover:text-gray-600 p-2 btn-press"><i class="fas fa-times text-xl"></i></button>
             </div>
             <div class="p-5 overflow-y-auto space-y-5">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">完工說明 / 處置紀錄 <span class="text-red-500">*</span></label>
-                    <textarea id="mc-note" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="請詳細填寫實際維修內容、更換零件或因故無法完修之原因..."></textarea>
+                    <textarea id="mc-note" rows="3" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-shadow" placeholder="請詳細填寫實際維修內容..."></textarea>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">完工照片 (施工後) <span class="text-red-500">*</span></label>
-                    <input type="file" id="mc-photos" accept="image/jpeg, image/png, image/webp" multiple class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 mb-2">
-                    <p class="text-xs text-gray-400">請至少上傳 1 張照片。若因規定無法拍照請於上方說明。</p>
+                    <input type="file" id="mc-photos" accept="image/jpeg, image/png, image/webp" multiple class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 mb-2 transition-colors">
                     <div id="mc-photo-preview" class="flex flex-wrap gap-2 mt-3"></div>
                 </div>
             </div>
-            <div class="p-4 border-t sticky bottom-0 bg-gray-50 rounded-b-2xl sm:rounded-b-xl pb-safe">
-                <button id="btn-submit-completion" class="w-full bg-green-600 text-white rounded-lg py-3.5 font-bold shadow-md active:bg-green-700 text-lg">確認送出完工</button>
+            <div class="p-4 border-t sticky bottom-0 bg-gray-50 rounded-b-2xl pb-safe">
+                <button id="btn-submit-completion" class="btn-press w-full bg-green-600 text-white rounded-xl py-3.5 font-bold shadow-md hover:bg-green-700 text-lg">確認送出完工</button>
             </div>
         </div>
     </div>
 
     <!-- Modal: Pause Ticket -->
-    <div id="modal-pause" class="fixed inset-0 bg-black bg-opacity-60 z-40 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+    <div id="modal-pause" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <h3 class="text-lg font-bold mb-3 text-orange-600"><i class="fas fa-pause-circle mr-2"></i>回報暫停 / 待料</h3>
-            <p class="text-xs text-gray-500 mb-4">提出後將記錄暫停時間，若經三星核准可扣除 SLA 時效計算。</p>
             <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">暫停原因 <span class="text-red-500">*</span></label>
                 <select id="mp-reason-type" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 outline-none mb-3">
-                    <option value="待料">待料</option>
-                    <option value="待進場">待進場限制</option>
-                    <option value="需協助">需其他協助</option>
+                    <option value="待料">待料</option><option value="待進場">待進場限制</option><option value="需協助">需其他協助</option>
                 </select>
-                <textarea id="mp-reason" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 outline-none" placeholder="請詳細說明情況與預估恢復時間..."></textarea>
+                <textarea id="mp-reason" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 outline-none" placeholder="詳細說明情況..."></textarea>
             </div>
             <div class="flex justify-end gap-3">
-                <button onclick="closeModal('modal-pause')" class="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium active:bg-gray-200">取消</button>
-                <button id="btn-submit-pause" class="px-5 py-2.5 bg-orange-500 text-white rounded-lg font-bold shadow active:bg-orange-600">確認送出</button>
+                <button onclick="closeModal('modal-pause')" class="btn-press px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium">取消</button>
+                <button id="btn-submit-pause" class="btn-press px-5 py-2.5 bg-orange-500 text-white rounded-lg font-bold shadow">確認送出</button>
             </div>
         </div>
     </div>
 
     <!-- Modal: Reject Ticket -->
-    <div id="modal-reject" class="fixed inset-0 bg-black bg-opacity-60 z-40 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+    <div id="modal-reject" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <h3 class="text-lg font-bold mb-3 text-red-600"><i class="fas fa-exclamation-circle mr-2"></i>退回案件</h3>
-            <p class="text-xs text-gray-500 mb-4">請填寫退回原因，案件將退回給前一關卡重新處理。</p>
             <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">退回原因 <span class="text-red-500">*</span></label>
-                <textarea id="mr-reason" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 outline-none" placeholder="請詳細說明退回原因..."></textarea>
+                <textarea id="mr-reason" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 outline-none" placeholder="請說明退回原因..."></textarea>
             </div>
             <div class="flex justify-end gap-3">
-                <button onclick="closeModal('modal-reject')" class="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium active:bg-gray-200">取消</button>
-                <button id="btn-submit-reject" class="px-5 py-2.5 bg-red-600 text-white rounded-lg font-bold shadow active:bg-red-700">確認退回</button>
+                <button onclick="closeModal('modal-reject')" class="btn-press px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium">取消</button>
+                <button id="btn-submit-reject" class="btn-press px-5 py-2.5 bg-red-600 text-white rounded-lg font-bold shadow">確認退回</button>
             </div>
         </div>
     </div>
 
     <!-- Modal: Assign Worker -->
-    <div id="modal-assign" class="fixed inset-0 bg-black bg-opacity-60 z-40 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+    <div id="modal-assign" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <h3 class="text-lg font-bold mb-3 text-orange-600"><i class="fas fa-hard-hat mr-2"></i>指派維護人員</h3>
-            <p class="text-xs text-gray-500 mb-4">請選擇要指派的現場維護人員，案件將會出現在他的手機任務中。</p>
             <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">指派給 <span class="text-red-500">*</span></label>
-                <select id="ma-worker-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 outline-none mb-3">
+                <select id="ma-worker-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500 outline-none">
                     <option value="">載入中...</option>
                 </select>
             </div>
             <div class="flex justify-end gap-3">
-                <button onclick="closeModal('modal-assign')" class="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium active:bg-gray-200">取消</button>
-                <button id="btn-submit-assign" class="px-5 py-2.5 bg-orange-500 text-white rounded-lg font-bold shadow active:bg-orange-600">確認派工</button>
+                <button onclick="closeModal('modal-assign')" class="btn-press px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium">取消</button>
+                <button id="btn-submit-assign" class="btn-press px-5 py-2.5 bg-orange-500 text-white rounded-lg font-bold shadow">確認派工</button>
             </div>
         </div>
     </div>
 
     <!-- Modal: AI Report Export -->
-    <div id="modal-report" class="fixed inset-0 bg-black bg-opacity-60 z-40 hidden flex items-end sm:items-center justify-center sm:p-4">
-        <div class="bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full max-w-lg flex flex-col h-[85vh] sm:h-auto sm:max-h-[90vh] transition-transform duration-300">
-            <div class="p-4 border-b flex justify-between items-center sticky top-0 bg-white rounded-t-2xl sm:rounded-t-xl z-10">
+    <div id="modal-report" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden flex items-end sm:items-center justify-center sm:p-4 transition-opacity">
+        <div class="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg flex flex-col h-[85vh] sm:h-auto sm:max-h-[90vh]">
+            <div class="p-4 border-b flex justify-between items-center sticky top-0 bg-white rounded-t-2xl z-10 shadow-sm">
                 <h3 class="text-lg font-bold text-gray-800"><i class="fas fa-chart-line text-purple-600 mr-2"></i>統計與分析報告</h3>
-                <button onclick="closeModal('modal-report')" class="text-gray-400 hover:text-gray-600 p-2"><i class="fas fa-times text-xl"></i></button>
+                <button onclick="closeModal('modal-report')" class="text-gray-400 hover:text-gray-600 p-2 btn-press"><i class="fas fa-times text-xl"></i></button>
             </div>
             <div class="p-5 overflow-y-auto flex-1 bg-gray-50">
-                <div id="report-content" class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 min-h-[200px] markdown-body">
-                    <div class="text-center py-10"><div class="spinner inline-block"></div><p class="mt-2 text-sm text-gray-500">正在生成報告...</p></div>
+                <div id="report-content" class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 min-h-[200px] markdown-body">
+                    <!-- AI Content Injected Here -->
                 </div>
             </div>
-            <div class="p-4 border-t sticky bottom-0 bg-white rounded-b-2xl sm:rounded-b-xl pb-safe grid grid-cols-2 gap-2">
-                <button id="btn-save-report" class="col-span-2 bg-yellow-500 text-white rounded-lg py-2.5 font-bold shadow-md active:bg-yellow-600 text-sm hidden flex items-center justify-center"><i class="fas fa-cloud-upload-alt mr-2"></i>存雲端</button>
-                <button id="btn-download-word" class="bg-blue-600 text-white rounded-lg py-2.5 font-bold shadow-md active:bg-blue-700 text-sm hidden flex items-center justify-center"><i class="fas fa-file-word mr-2"></i>匯出 Word</button>
-                <button id="btn-download-excel" class="bg-green-600 text-white rounded-lg py-2.5 font-bold shadow-md active:bg-green-700 text-sm flex items-center justify-center"><i class="fas fa-file-excel mr-2"></i>匯出 Excel</button>
-                <button onclick="closeModal('modal-report')" class="col-span-2 bg-gray-100 text-gray-700 rounded-lg py-2.5 font-bold shadow-sm active:bg-gray-200 text-sm flex items-center justify-center">關閉</button>
+            <div class="p-4 border-t sticky bottom-0 bg-white rounded-b-2xl pb-safe grid grid-cols-2 gap-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                <button id="btn-save-report" class="btn-press col-span-2 bg-yellow-500 text-white rounded-xl py-3 font-bold shadow-md hover:bg-yellow-600 text-sm hidden flex items-center justify-center"><i class="fas fa-cloud-upload-alt mr-2"></i>儲存至雲端歷史紀錄</button>
+                <button id="btn-download-word" class="btn-press bg-blue-600 text-white rounded-xl py-3 font-bold shadow-md hover:bg-blue-700 text-sm hidden flex items-center justify-center"><i class="fas fa-file-word mr-2"></i>匯出 Word</button>
+                <button id="btn-download-excel" class="btn-press bg-green-600 text-white rounded-xl py-3 font-bold shadow-md hover:bg-green-700 text-sm hidden flex items-center justify-center"><i class="fas fa-file-excel mr-2"></i>匯出 Excel</button>
+                <button onclick="closeModal('modal-report')" class="btn-press col-span-2 bg-gray-100 text-gray-700 rounded-xl py-3 font-bold shadow-sm hover:bg-gray-200 text-sm flex items-center justify-center mt-1">關閉</button>
             </div>
         </div>
     </div>
 
-    <div class="flex-1 overflow-y-auto w-full max-w-md mx-auto bg-white shadow-xl relative pb-16">
+    <!-- Main App Container -->
+    <div class="flex-1 overflow-y-auto w-full max-w-md mx-auto bg-white shadow-2xl relative pb-20 pt-safe">
         
         <!-- Header -->
-        <header id="app-header" class="bg-blue-600 text-white p-4 sticky top-0 z-20 shadow-md hidden flex items-center justify-between">
-            <h1 class="text-lg font-bold truncate">Samsung Control Tower</h1>
+        <header id="app-header" class="bg-blue-600 text-white p-4 sticky top-0 z-20 shadow-md hidden flex items-center justify-between transition-all">
+            <h1 class="text-lg font-bold truncate tracking-wide">Samsung Control Tower</h1>
             <div class="flex items-center gap-3">
-                <button id="btn-header-notifications" class="relative p-2">
+                <button id="btn-header-notifications" class="relative p-2 btn-press">
                     <i class="fas fa-bell text-xl"></i>
-                    <span id="badge-notifications" class="absolute top-1 right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full hidden transform scale-0 transition-transform duration-300">0</span>
+                    <span id="badge-notifications" class="absolute top-1 right-1 bg-red-500 border border-white text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full hidden transform scale-0 transition-transform duration-300">0</span>
                 </button>
-                <button id="btn-header-profile" class="p-2 -mr-2" onclick="navigate('profile')"><i class="fas fa-user-circle text-xl"></i></button>
+                <button id="btn-header-profile" class="p-2 -mr-2 btn-press" onclick="navigate('profile')"><i class="fas fa-user-circle text-xl"></i></button>
             </div>
         </header>
 
         <!-- View: Login -->
         <div id="view-login" class="view-section active p-6 h-full flex flex-col">
             <div class="flex-1 flex flex-col justify-center">
-                <div class="text-center mb-8">
-                    <img src="https://firebasestorage.googleapis.com/v0/b/k16-tony-ai-wisdom-platform.firebasestorage.app/o/assets%2F6av64EOvvqQNAIoXqcPfHC5BBeF3%2F1791740159735_Samsung%20logo.jpg?alt=media&token=4980b298-bd39-4166-8dfd-8058ba9d0e9c" alt="Samsung Logo" class="h-14 mx-auto mb-4 object-contain">
+                <div class="text-center mb-10">
+                    <img src="https://firebasestorage.googleapis.com/v0/b/k16-tony-ai-wisdom-platform.firebasestorage.app/o/assets%2F6av64EOvvqQNAIoXqcPfHC5BBeF3%2F1791740159735_Samsung%20logo.jpg?alt=media&token=4980b298-bd39-4166-8dfd-8058ba9d0e9c" alt="Samsung Logo" class="h-16 mx-auto mb-4 object-contain">
                     <h2 class="text-2xl font-bold text-gray-800">Cogito Control Tower</h2>
-                    <p class="text-sm text-gray-500 mt-2">SES與STS店家報修 派工與驗收協作平台</p>
+                    <p class="text-sm text-gray-500 mt-2 font-medium">SES與STS店家報修 派工與驗收協作平台</p>
                 </div>
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <input type="email" id="login-email" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="輸入Email">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+                        <input type="email" id="login-email" class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow bg-gray-50 focus:bg-white" placeholder="輸入Email">
                     </div>
                     <div>
                         <div class="flex justify-between items-end mb-1">
-                            <label class="block text-sm font-medium text-gray-700">密碼</label>
-                            <button type="button" id="btn-forgot-password" class="text-xs text-blue-600 hover:text-blue-800 font-medium active:text-blue-900">忘記密碼？</button>
+                            <label class="block text-sm font-semibold text-gray-700">密碼</label>
+                            <button type="button" id="btn-forgot-password" class="text-xs text-blue-600 hover:text-blue-800 font-medium btn-press">忘記密碼？</button>
                         </div>
                         <div class="relative w-full">
-                            <input type="password" id="login-password" class="w-full border border-gray-300 rounded-lg px-4 py-2 pr-10 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="輸入密碼">
-                            <button type="button" id="btn-toggle-password" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700 focus:outline-none">
-                                <i id="icon-toggle-password" class="fas fa-eye"></i>
+                            <input type="password" id="login-password" class="w-full border border-gray-300 rounded-xl px-4 py-3 pr-12 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow bg-gray-50 focus:bg-white" placeholder="輸入密碼">
+                            <button type="button" id="btn-toggle-password" class="absolute inset-y-0 right-0 px-4 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none transition-colors">
+                                <i id="icon-toggle-password" class="fas fa-eye text-lg"></i>
                             </button>
                         </div>
                     </div>
-                    <div class="flex gap-3">
-                        <button id="btn-login-email" class="flex-1 bg-blue-600 text-white rounded-lg py-3 font-semibold shadow-md active:bg-blue-700">登入</button>
-                        <button id="btn-register-email" class="flex-1 bg-green-600 text-white rounded-lg py-3 font-semibold shadow-md active:bg-green-700">註冊帳號</button>
+                    <div class="flex gap-3 pt-2">
+                        <button id="btn-login-email" class="btn-press flex-1 bg-blue-600 text-white rounded-xl py-3.5 font-bold shadow-md hover:bg-blue-700">登入</button>
+                        <button id="btn-register-email" class="btn-press flex-1 bg-green-600 text-white rounded-xl py-3.5 font-bold shadow-md hover:bg-green-700">註冊帳號</button>
                     </div>
-                    <div class="relative flex py-2 items-center">
-                        <div class="flex-grow border-t border-gray-300"></div>
-                        <span class="flex-shrink-0 mx-4 text-gray-400 text-sm">或</span>
-                        <div class="flex-grow border-t border-gray-300"></div>
+                    <div class="relative flex py-4 items-center">
+                        <div class="flex-grow border-t border-gray-200"></div>
+                        <span class="flex-shrink-0 mx-4 text-gray-400 text-xs font-medium">或</span>
+                        <div class="flex-grow border-t border-gray-200"></div>
                     </div>
-                    <button id="btn-login-google" class="w-full bg-white border border-gray-300 text-gray-700 rounded-lg py-3 font-semibold shadow-sm flex items-center justify-center gap-2 active:bg-gray-50">
+                    <button id="btn-login-google" class="btn-press w-full bg-white border-2 border-gray-200 text-gray-700 rounded-xl py-3.5 font-bold shadow-sm flex items-center justify-center gap-3 hover:bg-gray-50">
                         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="w-5 h-5">
                         使用 Google 登入
                     </button>
                 </div>
             </div>
-            <div class="mt-auto pt-6 pb-2 text-center">
-                <p class="text-[10px] text-gray-400 font-medium tracking-wide">系統平台設計由 &copy; 2026 TonyStudio 楊文澤顧問設計 All Rights Reserved</p>
+            <div class="mt-auto pt-8 pb-2 text-center">
+                <p class="text-[10px] text-gray-400 font-medium tracking-wide">系統平台設計由 &copy; 2026 TonyStudio 楊文澤顧問設計<br>All Rights Reserved</p>
             </div>
         </div>
 
-        <!-- View: Dashboard (Tickets List) -->
+        <!-- View: Dashboard -->
         <div id="view-dashboard" class="view-section p-4">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold">案件列表</h2>
-                <div id="role-badge" class="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full font-medium"></div>
+                <h2 class="text-xl font-bold text-gray-800">案件列表</h2>
+                <div id="role-badge" class="text-xs bg-gray-800 text-white px-3 py-1.5 rounded-full font-bold shadow-sm"></div>
             </div>
             
-            <!-- 修正：將 pt-2 改為按鈕本身的 mt-2，並為徽章加上白色邊框，徹底避開 overflow 裁切 -->
-            <div class="flex gap-3 mb-4 overflow-x-auto pb-2 px-1 hide-scrollbar">
-                <button class="filter-btn active bg-blue-100 text-blue-700 px-4 py-1.5 rounded-full text-sm whitespace-nowrap relative mt-2" data-filter="all">全部</button>
-                <button class="filter-btn bg-gray-100 text-gray-600 px-4 py-1.5 rounded-full text-sm whitespace-nowrap relative mt-2" data-filter="pending">
+            <!-- 狀態過濾列 (修正紅點裁切) -->
+            <div class="flex gap-3 mb-5 overflow-x-auto pb-3 px-1 hide-scrollbar -mx-1">
+                <button class="filter-btn btn-press active bg-blue-100 text-blue-700 px-5 py-2 rounded-full text-sm font-semibold whitespace-nowrap mt-2" data-filter="all">全部</button>
+                <button class="filter-btn btn-press bg-gray-100 text-gray-600 px-5 py-2 rounded-full text-sm font-semibold whitespace-nowrap relative mt-2" data-filter="pending">
                     待處理 
-                    <span id="badge-filter-pending" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold w-[18px] h-[18px] flex items-center justify-center rounded-full hidden shadow-sm border border-white box-content">0</span>
+                    <span id="badge-filter-pending" class="absolute -top-2 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full hidden shadow-md border-2 border-white">0</span>
                 </button>
-                <button class="filter-btn bg-gray-100 text-gray-600 px-4 py-1.5 rounded-full text-sm whitespace-nowrap relative mt-2" data-filter="active">
+                <button class="filter-btn btn-press bg-gray-100 text-gray-600 px-5 py-2 rounded-full text-sm font-semibold whitespace-nowrap relative mt-2" data-filter="active">
                     處理中 
-                    <span id="badge-filter-active" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold w-[18px] h-[18px] flex items-center justify-center rounded-full hidden shadow-sm border border-white box-content">0</span>
+                    <span id="badge-filter-active" class="absolute -top-2 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full hidden shadow-md border-2 border-white">0</span>
                 </button>
-                <button class="filter-btn bg-gray-100 text-gray-600 px-4 py-1.5 rounded-full text-sm whitespace-nowrap relative mt-2" data-filter="review">
+                <button class="filter-btn btn-press bg-gray-100 text-gray-600 px-5 py-2 rounded-full text-sm font-semibold whitespace-nowrap relative mt-2" data-filter="review">
                     待驗收 
-                    <span id="badge-filter-review" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold w-[18px] h-[18px] flex items-center justify-center rounded-full hidden shadow-sm border border-white box-content">0</span>
+                    <span id="badge-filter-review" class="absolute -top-2 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full hidden shadow-md border-2 border-white">0</span>
                 </button>
             </div>
 
-            <!-- Search and Filter Bar -->
-            <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 mb-4 flex flex-col gap-3">
+            <!-- 複合搜尋與排序列 -->
+            <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-gray-100 mb-5 flex flex-col gap-3">
                 <div class="relative">
-                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
-                    <input type="text" id="search-keyword" class="w-full bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="搜尋門市名稱或案件編號...">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" id="search-keyword" class="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" placeholder="搜尋門市名稱或案件編號...">
                 </div>
                 <div class="flex gap-2">
-                    <select id="search-category" class="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-2 text-sm focus:outline-none">
-                        <option value="">所有類別</option>
-                        <option value="SES_SIGNAGE">SES招牌修繕</option>
-                        <option value="SES_LIGHTBOX_LED">SES燈箱LED燈條</option>
-                        <option value="SES_FLOOR">SES地板維修</option>
-                        <option value="STS_CENTER_TABLE">STS 中桌修繕</option>
+                    <select id="search-category" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none font-medium">
+                        <option value="">所有維修類別</option>
+                        <option value="SES_SIGNAGE">SES招牌修繕</option><option value="SES_LIGHTBOX_LED">SES燈箱LED燈條</option>
+                        <option value="SES_FLOOR">SES地板維修</option><option value="STS_CENTER_TABLE">STS 中桌修繕</option>
                         <option value="OTHER">其他</option>
                     </select>
-                    <button id="btn-sort-time" class="bg-gray-50 border border-gray-200 text-gray-600 px-3 py-2 rounded-lg text-sm flex items-center justify-center whitespace-nowrap active:bg-gray-100">
-                        <i class="fas fa-sort-amount-down mr-1"></i>
+                    <button id="btn-sort-time" class="btn-press bg-gray-50 border border-gray-200 text-gray-600 px-4 py-2.5 rounded-xl text-sm flex items-center justify-center hover:bg-gray-100">
+                        <i class="fas fa-sort-amount-down"></i>
                     </button>
                 </div>
             </div>
 
-            <div id="tickets-list" class="space-y-3 pb-4">
+            <div id="tickets-list" class="space-y-3 pb-6">
                 <!-- Tickets injected via JS -->
             </div>
         </div>
 
         <!-- View: New Ticket -->
         <div id="view-new-ticket" class="view-section p-4">
-            <div class="flex items-center mb-6 gap-3">
-                <button onclick="navigate('dashboard')" class="text-gray-500 p-2 -ml-2"><i class="fas fa-arrow-left"></i></button>
-                <h2 class="text-xl font-bold">新增報修</h2>
+            <div class="flex items-center mb-6 gap-3 pt-2">
+                <button onclick="navigate('dashboard')" class="btn-press text-gray-500 p-2 -ml-2"><i class="fas fa-arrow-left text-lg"></i></button>
+                <h2 class="text-xl font-bold text-gray-800">新增報修案件</h2>
             </div>
-            <form id="form-new-ticket" class="space-y-5">
+            <form id="form-new-ticket" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-5">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">店家類型 <span class="text-red-500">*</span></label>
-                    <select id="nt-channel" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white" required>
-                        <option value="">請選擇</option>
-                        <option value="SES">SES</option>
-                        <option value="STS">STS</option>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">店家類型 <span class="text-red-500">*</span></label>
+                    <select id="nt-channel" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" required>
+                        <option value="">請選擇類型</option><option value="SES">SES 門市</option><option value="STS">STS 門市</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">門市 <span class="text-red-500">*</span></label>
-                    <select id="nt-store" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white" required disabled>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">報修門市 <span class="text-red-500">*</span></label>
+                    <select id="nt-store" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" required disabled>
                         <option value="">請先選擇店家類型</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">報修項目 <span class="text-red-500">*</span></label>
-                    <select id="nt-category" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white" required disabled>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">報修項目 <span class="text-red-500">*</span></label>
+                    <select id="nt-category" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" required disabled>
                         <option value="">請先選擇店家類型</option>
                     </select>
                 </div>
                 <div id="nt-other-container" class="hidden">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">其他項目名稱 <span class="text-red-500">*</span></label>
-                    <input type="text" id="nt-other-name" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="請簡述項目 (1-100字)" maxlength="100">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">其他項目名稱 <span class="text-red-500">*</span></label>
+                    <input type="text" id="nt-other-name" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="請簡述項目 (1-100字)" maxlength="100">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">問題描述 <span class="text-red-500">*</span></label>
-                    <textarea id="nt-description" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="請詳細描述問題狀況..." required></textarea>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">問題詳細描述 <span class="text-red-500">*</span></label>
+                    <textarea id="nt-description" rows="3" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="請詳細描述損壞狀況或需要維修的地方..." required></textarea>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">現場照片</label>
-                    <input type="file" id="nt-photos" accept="image/jpeg, image/png, image/webp" multiple class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                    <p class="text-xs text-gray-400 mt-1">系統將自動壓縮照片以節省流量。</p>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">現場照片上傳</label>
+                    <input type="file" id="nt-photos" accept="image/jpeg, image/png, image/webp" multiple class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors">
+                    <p class="text-xs text-gray-400 mt-2"><i class="fas fa-compress-arrows-alt mr-1"></i>系統會自動壓縮照片以節省流量</p>
                     <div id="nt-photo-preview" class="flex flex-wrap gap-2 mt-3"></div>
                 </div>
-                <button type="submit" id="btn-submit-ticket" class="w-full bg-blue-600 text-white rounded-lg py-3 font-semibold shadow-md active:bg-blue-700">送出報修</button>
+                <button type="submit" id="btn-submit-ticket" class="btn-press w-full bg-blue-600 text-white rounded-xl py-3.5 font-bold shadow-md hover:bg-blue-700 text-lg mt-2">送出報修</button>
             </form>
         </div>
 
         <!-- View: Analysis (Data & Report) -->
         <div id="view-analysis" class="view-section p-4">
-            <h2 class="text-xl font-bold mb-4">資料分析與歷史報表</h2>
+            <h2 class="text-xl font-bold text-gray-800 mb-5 pt-2">資料分析與報表</h2>
             
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4">
-                <h3 class="font-bold text-gray-800 mb-2"><i class="fas fa-filter text-blue-500 mr-2"></i>時間維度查詢</h3>
-                <select id="ana-time-type" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white mb-3 outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="all">全部歷史資料</option>
-                    <option value="month">按月份 (Month)</option>
-                    <option value="quarter">按季度 (Quarter)</option>
-                    <option value="year">按年度 (Year)</option>
-                </select>
-                
-                <div id="ana-inputs-month" class="ana-input-group hidden mb-3">
-                    <input type="month" id="ana-val-month" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+            <!-- AI Key Panel -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-5">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-gray-800 text-lg"><i class="fas fa-robot text-purple-500 mr-2"></i>AI 助理設定</h3>
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" class="btn-press text-[10px] bg-purple-50 text-purple-600 border border-purple-200 px-3 py-1.5 rounded-lg font-bold hover:bg-purple-100 transition-colors flex items-center shadow-sm">
+                        <i class="fas fa-external-link-alt mr-1"></i>免費申請 Key
+                    </a>
                 </div>
-                
-                <div id="ana-inputs-quarter" class="ana-input-group hidden mb-3 flex gap-2">
-                    <input type="number" id="ana-val-q-year" placeholder="西元年 (如 2026)" class="w-1/2 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500">
-                    <select id="ana-val-q-quarter" class="w-1/2 border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="Q1">Q1 (1-3月)</option>
-                        <option value="Q2">Q2 (4-6月)</option>
-                        <option value="Q3">Q3 (7-9月)</option>
-                        <option value="Q4">Q4 (10-12月)</option>
-                    </select>
-                </div>
-                
-                <div id="ana-inputs-year" class="ana-input-group hidden mb-3">
-                    <input type="number" id="ana-val-year" placeholder="西元年 (如 2026)" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                
-                <button id="btn-generate-analysis" class="w-full bg-purple-600 text-white rounded-lg py-2.5 font-bold shadow-md active:bg-purple-700 flex items-center justify-center gap-2">
-                    <i class="fas fa-magic"></i> 統計與產生報告
-                </button>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4">
-                <h3 class="font-bold text-gray-800 mb-1"><i class="fas fa-robot text-purple-500 mr-2"></i>AI 助理設定 (Gemini)</h3>
-                <p class="text-xs text-gray-500 mb-4">輸入 Gemini API Key 以啟用深度分析與圖表繪製功能。金鑰僅存於當下瀏覽器記憶體中。</p>
+                <p class="text-xs text-gray-500 mb-4 leading-relaxed">輸入 Gemini API Key 以解鎖 AI 深度分析與專業 Word 報告生成 (金鑰將安全存於您的瀏覽器中)。</p>
                 <div class="space-y-3">
-                    <input type="password" id="input-ai-key" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-500" placeholder="輸入 Gemini API Key">
+                    <input type="password" id="input-ai-key" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-purple-500 bg-gray-50 focus:bg-white" placeholder="貼上您的 Gemini API Key">
                     <div class="flex gap-2">
-                        <button id="btn-save-ai" class="flex-1 bg-gray-800 text-white rounded-lg py-2 text-sm font-medium active:bg-gray-900 shadow-sm">儲存金鑰</button>
-                        <button id="btn-clear-ai" class="flex-1 bg-gray-100 text-gray-700 rounded-lg py-2 text-sm font-medium active:bg-gray-200">清除</button>
+                        <button id="btn-save-ai" class="btn-press flex-1 bg-gray-800 text-white rounded-xl py-2.5 text-sm font-bold shadow-sm hover:bg-gray-900">儲存金鑰</button>
+                        <button id="btn-clear-ai" class="btn-press flex-1 bg-gray-100 text-gray-700 rounded-xl py-2.5 text-sm font-bold hover:bg-gray-200">清除</button>
                     </div>
                 </div>
             </div>
             
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4">
-                <h3 class="font-bold text-gray-800 mb-3"><i class="fas fa-history text-green-500 mr-2"></i>雲端歷史報告</h3>
-                <p class="text-xs text-gray-500 mb-3">點擊調閱過去產生的正式報告，並可下載為 Word 存查。</p>
+            <!-- Generate Report Panel -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-5">
+                <h3 class="font-bold text-gray-800 mb-4 text-lg"><i class="fas fa-chart-pie text-blue-500 mr-2"></i>產生營運分析報告</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1.5">分析時間維度</label>
+                        <select id="ana-time-type" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="month">依月份 (Monthly)</option>
+                            <option value="quarter">依季度 (Quarterly)</option>
+                            <option value="year">依年度 (Yearly)</option>
+                            <option value="all">全部歷史累積 (All Time)</option>
+                        </select>
+                    </div>
+                    
+                    <div id="ana-inputs-month" class="ana-input-group">
+                        <label class="block text-xs font-bold text-gray-500 mb-1.5">選擇月份</label>
+                        <input type="month" id="ana-val-month" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50">
+                    </div>
+
+                    <div id="ana-inputs-quarter" class="ana-input-group hidden grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1.5">年度</label>
+                            <input type="number" id="ana-val-q-year" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" placeholder="如: 2026">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1.5">季度</label>
+                            <select id="ana-val-q-quarter" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50">
+                                <option value="Q1">Q1 (1-3月)</option><option value="Q2">Q2 (4-6月)</option>
+                                <option value="Q3">Q3 (7-9月)</option><option value="Q4">Q4 (10-12月)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="ana-inputs-year" class="ana-input-group hidden">
+                        <label class="block text-xs font-bold text-gray-500 mb-1.5">輸入年度</label>
+                        <input type="number" id="ana-val-year" class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" placeholder="如: 2026">
+                    </div>
+                    
+                    <button id="btn-generate-analysis" class="btn-press w-full bg-blue-600 text-white rounded-xl py-3.5 text-sm font-bold shadow-md hover:bg-blue-700 mt-2 flex justify-center items-center">
+                        <i class="fas fa-magic mr-2"></i>統計數據並生成報表
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Cloud History Panel -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-5">
+                <h3 class="font-bold text-gray-800 mb-2 text-lg"><i class="fas fa-history text-green-500 mr-2"></i>雲端歷史報告</h3>
+                <p class="text-xs text-gray-500 mb-4 leading-relaxed">點擊調閱團隊過去儲存的正式報告，可隨時下載 Word 存查。</p>
                 <div id="reports-history-list" class="space-y-2">
-                    <p class="text-sm text-gray-500 text-center py-2">載入中...</p>
+                    <div class="text-center py-4"><div class="spinner inline-block w-4 h-4 border-2"></div></div>
                 </div>
             </div>
         </div>
 
         <!-- View: Ticket Detail -->
-        <div id="view-ticket-detail" class="view-section bg-gray-50 min-h-full">
+        <div id="view-ticket-detail" class="view-section bg-gray-50 min-h-full pb-10">
             <div class="bg-white p-4 shadow-sm sticky top-0 z-10 flex items-center gap-3">
-                <button onclick="navigate('dashboard')" class="text-gray-500 p-2 -ml-2"><i class="fas fa-arrow-left"></i></button>
+                <button onclick="navigate('dashboard')" class="btn-press text-gray-500 p-2 -ml-2"><i class="fas fa-arrow-left text-lg"></i></button>
                 <div class="flex-1 min-w-0">
-                    <h2 class="text-lg font-bold truncate" id="td-title">載入中...</h2>
-                    <p class="text-xs text-gray-500" id="td-id">---</p>
+                    <h2 class="text-lg font-bold truncate text-gray-800" id="td-title">載入中...</h2>
+                    <p class="text-xs text-gray-500 font-mono" id="td-id">---</p>
                 </div>
-                <span id="td-status-badge" class="px-2 py-1 rounded text-xs font-bold whitespace-nowrap">---</span>
+                <span id="td-status-badge" class="px-2 py-1 rounded text-xs font-bold whitespace-nowrap shadow-sm">---</span>
             </div>
             
             <div class="p-4 space-y-4">
-                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                    <div class="flex justify-between mb-2">
-                        <span class="text-sm text-gray-500">門市</span>
-                        <span class="text-sm font-medium" id="td-store">---</span>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="flex justify-between mb-3">
+                        <span class="text-sm text-gray-500 font-medium">報修門市</span>
+                        <span class="text-sm font-bold text-gray-800" id="td-store">---</span>
                     </div>
-                    <div class="flex justify-between mb-2">
-                        <span class="text-sm text-gray-500">分類</span>
-                        <span class="text-sm font-medium" id="td-category">---</span>
+                    <div class="flex justify-between mb-3">
+                        <span class="text-sm text-gray-500 font-medium">維護分類</span>
+                        <span class="text-sm font-bold text-gray-800" id="td-category">---</span>
                     </div>
                     <div class="flex justify-between mb-4">
-                        <span class="text-sm text-gray-500">報修時間</span>
-                        <span class="text-sm font-medium" id="td-time">---</span>
+                        <span class="text-sm text-gray-500 font-medium">報修時間</span>
+                        <span class="text-sm font-bold text-gray-800" id="td-time">---</span>
                     </div>
-                    <div class="pt-3 border-t border-gray-100">
-                        <span class="text-sm text-gray-500 block mb-1">問題描述</span>
-                        <p class="text-sm text-gray-800 whitespace-pre-wrap" id="td-desc">---</p>
+                    <div class="pt-4 border-t border-gray-100">
+                        <span class="text-sm text-gray-500 font-medium block mb-2">問題描述</span>
+                        <p class="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed" id="td-desc">---</p>
                     </div>
-                    <div id="td-photos-container" class="mt-4 pt-3 border-t border-gray-100 hidden">
-                        <span class="text-sm text-gray-500 block mb-2">照片附件</span>
+                    <div id="td-photos-container" class="mt-5 pt-4 border-t border-gray-100 hidden">
+                        <span class="text-sm text-gray-500 font-medium block mb-3">照片附件</span>
                         <div id="td-photos" class="grid grid-cols-3 gap-2"></div>
                     </div>
                 </div>
 
-                <div id="td-actions-area" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hidden">
-                    <h3 class="text-sm font-bold mb-3 border-b pb-2 text-gray-700">可執行動作</h3>
+                <div id="td-actions-area" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hidden">
+                    <h3 class="text-sm font-bold mb-4 border-b pb-2 text-gray-800">可執行動作</h3>
                     <div id="td-dynamic-actions" class="space-y-3"></div>
                 </div>
 
-                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
-                    <h3 class="text-sm font-bold mb-3 text-gray-700">處理歷程</h3>
-                    <div id="td-timeline" class="relative py-2"></div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-sm font-bold mb-4 text-gray-800">處理歷程</h3>
+                    <div id="td-timeline" class="relative py-2 ml-2"></div>
                 </div>
             </div>
         </div>
 
         <!-- View: Settings / Profile -->
         <div id="view-profile" class="view-section p-4">
-             <div class="flex items-center mb-6 gap-3">
-                <button onclick="navigate('dashboard')" class="text-gray-500 p-2 -ml-2"><i class="fas fa-arrow-left"></i></button>
-                <h2 class="text-xl font-bold">個人與系統設定</h2>
+             <div class="flex items-center mb-6 gap-3 pt-2">
+                <button onclick="navigate('dashboard')" class="btn-press text-gray-500 p-2 -ml-2"><i class="fas fa-arrow-left text-lg"></i></button>
+                <h2 class="text-xl font-bold text-gray-800">個人與系統設定</h2>
             </div>
             
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4">
-                <div class="flex items-center gap-4 mb-4">
-                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xl font-bold">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-5">
+                <div class="flex items-center gap-4 mb-5">
+                    <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl font-bold shadow-inner">
                         <i class="fas fa-user"></i>
                     </div>
                     <div>
-                        <h3 id="prof-email" class="font-bold text-gray-800">---</h3>
-                        <p id="prof-role" class="text-sm text-gray-500">載入中...</p>
+                        <h3 id="prof-email" class="font-bold text-gray-800 text-lg">---</h3>
+                        <p id="prof-role" class="text-sm text-gray-500 font-medium">載入中...</p>
                     </div>
                 </div>
-                <button id="btn-logout" class="w-full bg-red-50 text-red-600 border border-red-200 rounded-lg py-2 font-medium active:bg-red-100">登出系統</button>
+                <button id="btn-logout" class="btn-press w-full bg-red-50 text-red-600 border border-red-200 rounded-xl py-3 font-bold hover:bg-red-100">登出系統</button>
             </div>
 
             <!-- Admin Area -->
-            <div id="prof-admin-area" class="hidden mb-4 space-y-4">
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                    <h3 class="font-bold text-gray-800 mb-3"><i class="fas fa-store text-blue-500 mr-2"></i>店家管理</h3>
-                    <p class="text-sm text-gray-500 mb-3">新增、停用 SES 與 STS 店家主檔，或批次上傳 CSV。</p>
-                    <button onclick="navigate('admin-stores')" class="w-full bg-gray-100 text-gray-700 rounded-lg py-2 font-medium active:bg-gray-200">管理店家</button>
+            <div id="prof-admin-area" class="hidden space-y-4">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                    <h3 class="font-bold text-gray-800 mb-2 text-lg"><i class="fas fa-store text-blue-500 mr-2"></i>店家管理</h3>
+                    <p class="text-sm text-gray-500 mb-4 leading-relaxed">新增、停用 SES 與 STS 店家主檔，或批次上傳 CSV 檔案。</p>
+                    <button onclick="navigate('admin-stores')" class="btn-press w-full bg-gray-100 text-gray-800 rounded-xl py-3 font-bold hover:bg-gray-200">管理店家</button>
                 </div>
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                    <h3 class="font-bold text-gray-800 mb-3"><i class="fas fa-users-cog text-green-500 mr-2"></i>人員與權限管理</h3>
-                    <p class="text-sm text-gray-500 mb-3">審核新註冊帳號、分配角色權限與管理現場工班。</p>
-                    <button onclick="navigate('admin-members')" class="w-full bg-green-100 text-green-700 rounded-lg py-2 font-medium active:bg-green-200 shadow-sm border border-green-300">管理權限</button>
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                    <h3 class="font-bold text-gray-800 mb-2 text-lg"><i class="fas fa-users-cog text-green-500 mr-2"></i>人員與權限管理</h3>
+                    <p class="text-sm text-gray-500 mb-4 leading-relaxed">審核新註冊帳號、分配角色權限與管理現場工班人員。</p>
+                    <button onclick="navigate('admin-members')" class="btn-press w-full bg-green-100 text-green-700 rounded-xl py-3 font-bold shadow-sm border border-green-200 hover:bg-green-200">管理權限</button>
                 </div>
             </div>
         </div>
 
         <!-- View: Admin Stores -->
         <div id="view-admin-stores" class="view-section p-4">
-            <div class="flex items-center mb-6 gap-3">
-                <button onclick="navigate('profile')" class="text-gray-500 p-2 -ml-2"><i class="fas fa-arrow-left"></i></button>
-                <h2 class="text-xl font-bold">店家主檔管理</h2>
+            <div class="flex items-center mb-6 gap-3 pt-2">
+                <button onclick="navigate('profile')" class="btn-press text-gray-500 p-2 -ml-2"><i class="fas fa-arrow-left text-lg"></i></button>
+                <h2 class="text-xl font-bold text-gray-800">店家主檔管理</h2>
             </div>
             
-            <form id="form-new-store" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 space-y-3">
-                <h3 class="font-bold text-sm text-gray-700">新增單一店家</h3>
+            <form id="form-new-store" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-5 space-y-4">
+                <h3 class="font-bold text-gray-800 border-b pb-2">新增單一店家</h3>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-medium text-gray-500 mb-1">代碼 *</label>
-                        <input type="text" id="as-code" class="w-full border border-gray-300 rounded px-2 py-1 text-sm uppercase" required placeholder="如: TPE01">
+                        <label class="block text-xs font-bold text-gray-500 mb-1">代碼 *</label>
+                        <input type="text" id="as-code" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm uppercase bg-gray-50 focus:bg-white focus:ring-2 focus:ring-gray-400 outline-none" required placeholder="如: TPE01">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-gray-500 mb-1">類型 *</label>
-                        <select id="as-type" class="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white" required>
-                            <option value="SES">SES</option>
-                            <option value="STS">STS</option>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">類型 *</label>
+                        <select id="as-type" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:bg-white outline-none" required>
+                            <option value="SES">SES</option><option value="STS">STS</option>
                         </select>
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">名稱 *</label>
-                    <input type="text" id="as-name" class="w-full border border-gray-300 rounded px-2 py-1 text-sm" required placeholder="門市名稱">
+                    <label class="block text-xs font-bold text-gray-500 mb-1">名稱 *</label>
+                    <input type="text" id="as-name" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-gray-400 outline-none" required placeholder="門市名稱">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-medium text-gray-500 mb-1">縣市 *</label>
-                        <input type="text" id="as-region" class="w-full border border-gray-300 rounded px-2 py-1 text-sm" required placeholder="如: 台北市">
+                        <label class="block text-xs font-bold text-gray-500 mb-1">縣市 *</label>
+                        <input type="text" id="as-region" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-gray-400 outline-none" required placeholder="如: 台北市">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-gray-500 mb-1">地址 *</label>
-                        <input type="text" id="as-address" class="w-full border border-gray-300 rounded px-2 py-1 text-sm" required placeholder="地址">
+                        <label class="block text-xs font-bold text-gray-500 mb-1">地址 *</label>
+                        <input type="text" id="as-address" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-gray-400 outline-none" required placeholder="地址">
                     </div>
                 </div>
-                <button type="submit" class="w-full bg-gray-800 text-white rounded py-2 text-sm font-medium mt-2">新增店家</button>
+                <button type="submit" class="btn-press w-full bg-gray-800 text-white rounded-xl py-2.5 text-sm font-bold mt-2 hover:bg-gray-900 shadow-md">新增店家</button>
             </form>
 
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 space-y-3">
-                <h3 class="font-bold text-sm text-gray-700"><i class="fas fa-cloud-upload-alt text-blue-500 mr-2"></i>批次匯入店家</h3>
-                <p class="text-xs text-gray-500 mb-2">上傳 <b>CSV</b> 將自動匯入（依序：代碼、類型、名稱、縣市、地址）。</p>
-                <input type="file" id="as-bulk-files" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                <button type="button" id="btn-upload-stores" class="w-full bg-blue-600 text-white rounded py-2 text-sm font-medium mt-2 shadow active:bg-blue-700">開始匯入</button>
-                <div id="bulk-upload-status" class="text-xs space-y-1 mt-3 hidden bg-gray-50 p-2 rounded"></div>
-            </div>
-
-            <h3 class="font-bold text-sm text-gray-700 mb-3">現有店家列表</h3>
-            <div id="admin-stores-list" class="space-y-2"></div>
+            <h3 class="font-bold text-gray-800 mb-3 px-1">現有店家列表</h3>
+            <div id="admin-stores-list" class="space-y-3 pb-6"></div>
         </div>
 
         <!-- View: Admin Members -->
         <div id="view-admin-members" class="view-section p-4">
-            <div class="flex items-center mb-6 gap-3">
-                <button onclick="navigate('profile')" class="text-gray-500 p-2 -ml-2"><i class="fas fa-arrow-left"></i></button>
-                <h2 class="text-xl font-bold">人員與權限管理</h2>
+            <div class="flex items-center mb-6 gap-3 pt-2">
+                <button onclick="navigate('profile')" class="btn-press text-gray-500 p-2 -ml-2"><i class="fas fa-arrow-left text-lg"></i></button>
+                <h2 class="text-xl font-bold text-gray-800">人員與權限管理</h2>
             </div>
             
-            <div class="flex gap-2 mb-4 overflow-x-auto pb-2 hide-scrollbar">
-                <button class="member-filter-btn active bg-blue-100 text-blue-700 px-4 py-1.5 rounded-full text-sm whitespace-nowrap" data-filter="all">全部人員</button>
-                <button class="member-filter-btn bg-gray-100 text-gray-600 px-4 py-1.5 rounded-full text-sm whitespace-nowrap" data-filter="pending">待審核/停用</button>
-                <button class="member-filter-btn bg-gray-100 text-gray-600 px-4 py-1.5 rounded-full text-sm whitespace-nowrap" data-filter="active">已啟用</button>
+            <div class="flex gap-2 mb-5 overflow-x-auto pb-2 hide-scrollbar">
+                <button class="member-filter-btn btn-press active bg-blue-100 text-blue-700 px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap" data-filter="all">全部人員</button>
+                <button class="member-filter-btn btn-press bg-gray-100 text-gray-600 px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap" data-filter="pending">待審核/停用</button>
+                <button class="member-filter-btn btn-press bg-gray-100 text-gray-600 px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap" data-filter="active">已啟用</button>
             </div>
-            <div id="admin-members-list" class="space-y-3 pb-4"></div>
+            <div id="admin-members-list" class="space-y-4 pb-6"></div>
         </div>
 
-        <!-- View: Pending -->
+        <!-- View: Pending Account -->
         <div id="view-pending" class="view-section p-6 h-full flex flex-col justify-center items-center text-center bg-gray-50">
-            <i class="fas fa-user-clock text-6xl text-orange-400 mb-4"></i>
-            <h2 class="text-xl font-bold text-gray-800 mb-2">帳號審核中</h2>
-            <p class="text-sm text-gray-500 mb-6">您的帳號已成功註冊，目前等待管理員開通權限。請聯繫系統管理員為您設定角色後，重新整理此頁面。</p>
-            <button id="btn-logout-pending" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium active:bg-gray-300">登出並返回</button>
+            <div class="w-24 h-24 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center text-5xl mb-6 shadow-sm"><i class="fas fa-user-clock"></i></div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-3">帳號審核中</h2>
+            <p class="text-sm text-gray-500 mb-8 leading-relaxed max-w-[280px]">您的帳號已成功註冊，目前等待管理員開通權限。請聯繫系統管理員為您設定角色後，重新整理此頁面。</p>
+            <button id="btn-logout-pending" class="btn-press px-8 py-3.5 bg-gray-800 text-white rounded-xl font-bold shadow-md hover:bg-gray-900 w-full max-w-[280px]">登出並返回</button>
         </div>
 
     </div>
 
     <!-- Bottom Navigation -->
-    <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-white border-t border-gray-200 flex justify-around items-center pb-safe z-20 hidden">
-        <button onclick="navigate('dashboard')" class="bottom-nav-item flex-1 py-3 flex flex-col items-center gap-1 active" data-target="dashboard">
-            <i class="fas fa-list-ul text-lg"></i>
-            <span class="text-[10px]">案件</span>
+    <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-white/90 backdrop-blur-md border-t border-gray-200 flex justify-around items-center pb-safe z-20 hidden shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+        <button onclick="navigate('dashboard')" class="bottom-nav-item flex-1 py-3 flex flex-col items-center gap-1.5 active btn-press" data-target="dashboard">
+            <i class="fas fa-list-ul text-[20px]"></i>
+            <span class="text-[10px] font-medium">案件</span>
         </button>
-        <button onclick="navigate('new-ticket')" class="bottom-nav-item flex-1 py-3 flex flex-col items-center gap-1" data-target="new-ticket">
-            <i class="fas fa-plus-circle text-lg"></i>
-            <span class="text-[10px]">報修</span>
+        <button onclick="navigate('new-ticket')" class="bottom-nav-item flex-1 py-3 flex flex-col items-center gap-1.5 btn-press" data-target="new-ticket">
+            <i class="fas fa-plus-circle text-[20px]"></i>
+            <span class="text-[10px] font-medium">報修</span>
         </button>
-        <button onclick="navigate('analysis')" class="bottom-nav-item flex-1 py-3 flex flex-col items-center gap-1" data-target="analysis">
-            <i class="fas fa-chart-pie text-lg"></i>
-            <span class="text-[10px]">分析</span>
+        <button onclick="navigate('analysis')" class="bottom-nav-item flex-1 py-3 flex flex-col items-center gap-1.5 btn-press" data-target="analysis">
+            <i class="fas fa-chart-pie text-[20px]"></i>
+            <span class="text-[10px] font-medium">分析</span>
         </button>
-        <button onclick="navigate('profile')" class="bottom-nav-item flex-1 py-3 flex flex-col items-center gap-1" data-target="profile">
-            <i class="fas fa-cog text-lg"></i>
-            <span class="text-[10px]">設定</span>
+        <button onclick="navigate('profile')" class="bottom-nav-item flex-1 py-3 flex flex-col items-center gap-1.5 btn-press" data-target="profile">
+            <i class="fas fa-cog text-[20px]"></i>
+            <span class="text-[10px] font-medium">設定</span>
         </button>
     </nav>
 
@@ -569,14 +570,12 @@
         const storage = getStorage(app);
         const WORKSPACE = "ws-samsung"; 
 
-        try {
-            mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
-        } catch(e) { console.warn('Mermaid is not loaded globally yet.'); }
+        try { mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' }); } 
+        catch(e) { console.warn('Mermaid init error:', e); }
 
         let currentUser = null;
         let userRole = null; 
         let currentView = 'login';
-        let geminiApiKey = "";
         let storesCache = [];
         let allTicketsCache = [];
         let activeTicketListener = null;
@@ -586,46 +585,38 @@
         let currentReportPayload = null;
         
         let filters = { status: 'all', keyword: '', category: '', sort: 'desc' };
+        
+        // UX 提升：讀取 LocalStorage 中的 API Key
+        let geminiApiKey = localStorage.getItem('geminiApiKey') || "";
+        if (geminiApiKey && document.getElementById('input-ai-key')) {
+            document.getElementById('input-ai-key').value = '********';
+        }
 
-        // 綁定案件列表的上方狀態過濾按鈕 (解決無法點擊的問題)
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const targetBtn = e.currentTarget;
-                // 重置所有按鈕樣式
                 document.querySelectorAll('.filter-btn').forEach(b => { 
-                    b.classList.replace('bg-blue-100', 'bg-gray-100'); 
-                    b.classList.replace('text-blue-700', 'text-gray-600'); 
+                    b.classList.replace('bg-blue-100', 'bg-gray-100'); b.classList.replace('text-blue-700', 'text-gray-600'); 
                 });
-                // 點亮當前按鈕
-                targetBtn.classList.replace('bg-gray-100', 'bg-blue-100');
-                targetBtn.classList.replace('text-gray-600', 'text-blue-700');
-                // 更新過濾條件並重新渲染
-                filters.status = targetBtn.dataset.filter;
+                e.currentTarget.classList.replace('bg-gray-100', 'bg-blue-100');
+                e.currentTarget.classList.replace('text-gray-600', 'text-blue-700');
+                filters.status = e.currentTarget.dataset.filter;
                 renderTicketsList();
             });
         });
 
         const CATEGORIES = {
-            'SES': [
-                { id: 'SES_SIGNAGE', label: 'SES招牌修繕' },
-                { id: 'SES_LIGHTBOX_LED', label: 'SES燈箱LED燈條' },
-                { id: 'SES_FLOOR', label: 'SES地板維修' },
-                { id: 'OTHER', label: '其他' }
-            ],
-            'STS': [
-                { id: 'STS_CENTER_TABLE', label: 'STS 中桌修繕' },
-                { id: 'OTHER', label: '其他' }
-            ]
+            'SES': [{ id: 'SES_SIGNAGE', label: 'SES招牌修繕' }, { id: 'SES_LIGHTBOX_LED', label: 'SES燈箱LED燈條' }, { id: 'SES_FLOOR', label: 'SES地板維修' }, { id: 'OTHER', label: '其他' }],
+            'STS': [{ id: 'STS_CENTER_TABLE', label: 'STS 中桌修繕' }, { id: 'OTHER', label: '其他' }]
         };
 
         const STATUS_MAP = {
-            'submitted': { label: '待處理', color: 'bg-red-100 text-red-700' },
-            'assigned': { label: '已派工', color: 'bg-orange-100 text-orange-700' },
-            'in_progress': { label: '維修中', color: 'bg-blue-100 text-blue-700' },
-            'contractor_review': { label: '待卡爾吉特檢查', color: 'bg-purple-100 text-purple-700' },
-            'samsung_review': { label: '待三星驗收', color: 'bg-indigo-100 text-indigo-700' },
-            'closed': { label: '已結案', color: 'bg-green-100 text-green-700' },
-            'cancelled': { label: '已取消', color: 'bg-gray-100 text-gray-700' }
+            'submitted': { label: '待處理', color: 'bg-red-100 text-red-700 border-red-200' },
+            'assigned': { label: '已派工', color: 'bg-orange-100 text-orange-700 border-orange-200' },
+            'in_progress': { label: '維修中', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+            'contractor_review': { label: '待卡爾吉特', color: 'bg-purple-100 text-purple-700 border-purple-200' },
+            'samsung_review': { label: '待三星驗收', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
+            'closed': { label: '已結案', color: 'bg-green-100 text-green-700 border-green-200' },
+            'cancelled': { label: '已取消', color: 'bg-gray-100 text-gray-700 border-gray-200' }
         };
 
         function showLoader(show) { document.getElementById('global-loader').classList.toggle('hidden', !show); }
@@ -634,20 +625,23 @@
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             const color = type === 'error' ? 'bg-red-600' : (type === 'success' ? 'bg-green-600' : 'bg-gray-800');
-            toast.className = `${color} text-white px-4 py-3 rounded-lg shadow-lg text-sm flex items-center justify-between transition-opacity duration-300 opacity-0`;
-            toast.innerHTML = `<span>${msg}</span><button class="ml-4 opacity-75 hover:opacity-100"><i class="fas fa-times"></i></button>`;
+            toast.className = `${color} text-white px-4 py-3.5 rounded-xl shadow-xl text-sm flex items-center justify-between transition-all duration-300 transform -translate-y-full opacity-0 font-medium`;
+            toast.innerHTML = `<span>${msg}</span><button class="ml-4 opacity-75 hover:opacity-100 pointer-events-auto btn-press"><i class="fas fa-times"></i></button>`;
             container.appendChild(toast);
-            requestAnimationFrame(() => { toast.classList.remove('opacity-0'); });
+            requestAnimationFrame(() => { toast.classList.remove('-translate-y-full', 'opacity-0'); });
             const btn = toast.querySelector('button');
-            btn.onclick = () => { toast.classList.add('opacity-0'); setTimeout(() => toast.remove(), 300); };
+            btn.onclick = () => { toast.classList.add('-translate-y-full', 'opacity-0'); setTimeout(() => toast.remove(), 300); };
             setTimeout(() => { if(toast.parentElement) btn.onclick(); }, 4000);
         }
 
-        window.closeModal = function(id) { document.getElementById(id).classList.add('hidden'); };
+        window.closeModal = function(id) { 
+            const el = document.getElementById(id); if(el) el.classList.add('hidden'); 
+        };
 
         window.navigate = function(viewId) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-            document.getElementById(`view-${viewId}`).classList.add('active');
+            const target = document.getElementById(`view-${viewId}`);
+            if(target) target.classList.add('active');
             currentView = viewId;
             
             if(['dashboard', 'new-ticket', 'analysis', 'profile'].includes(viewId)) {
@@ -659,8 +653,6 @@
             } else if (viewId === 'login' || viewId === 'pending') {
                 document.getElementById('bottom-nav').classList.add('hidden');
                 document.getElementById('app-header').classList.add('hidden');
-            } else {
-                document.getElementById('bottom-nav').classList.add('hidden');
             }
 
             if (viewId === 'dashboard') loadTickets();
@@ -675,18 +667,21 @@
                 currentUser = user;
                 const isAuthorized = await resolveUserRole(user);
                 
-                document.getElementById('prof-email').textContent = user.email;
-                document.getElementById('role-badge').textContent = getRoleName(userRole);
-                document.getElementById('prof-role').textContent = getRoleName(userRole);
-                document.getElementById('prof-admin-area').classList.toggle('hidden', userRole !== 'admin');
+                const emailEl = document.getElementById('prof-email');
+                if(emailEl) emailEl.textContent = user.email;
+                
+                const roleBadge = document.getElementById('role-badge');
+                if(roleBadge) roleBadge.textContent = getRoleName(userRole);
+                
+                const profRole = document.getElementById('prof-role');
+                if(profRole) profRole.textContent = getRoleName(userRole);
+                
+                const adminArea = document.getElementById('prof-admin-area');
+                if(adminArea) adminArea.classList.toggle('hidden', userRole !== 'admin');
                 
                 if (isAuthorized) {
-                    loadStoresCache();
-                    setupNotificationListener();
-                    navigate('dashboard');
-                } else {
-                    navigate('pending');
-                }
+                    loadStoresCache(); setupNotificationListener(); navigate('dashboard');
+                } else { navigate('pending'); }
             } else {
                 currentUser = null; userRole = null;
                 if(activeTicketListener) activeTicketListener();
@@ -699,83 +694,87 @@
         async function resolveUserRole(user) {
             if (user.email && user.email.toLowerCase() === 'mindnodeai@gmail.com') {
                 userRole = 'admin';
-                try {
-                    await setDoc(doc(db, 'workspaces', WORKSPACE, 'members', user.uid), {
-                        role: 'admin', email: user.email, active: true, capabilities: ['storeAdmin']
-                    }, {merge: true});
-                } catch(e) {
-                    console.warn("無法自動設定最高管理員權限 (可能已被規則保護)", e);
-                }
+                try { await setDoc(doc(db, 'workspaces', WORKSPACE, 'members', user.uid), { role: 'admin', email: user.email, active: true, capabilities: ['storeAdmin'] }, {merge: true}); } catch(e) {}
                 return true; 
             }
-
             let isAuthorized = false;
             try {
-                const memberRef = doc(db, 'workspaces', WORKSPACE, 'members', user.uid);
-                const memberSnap = await getDoc(memberRef);
+                const memberSnap = await getDoc(doc(db, 'workspaces', WORKSPACE, 'members', user.uid));
                 if (memberSnap.exists()) {
-                    const data = memberSnap.data();
-                    userRole = data.role;
-                    isAuthorized = (data.active === true && !!data.role); 
-                } else {
-                    await setDoc(memberRef, { email: user.email, active: false, role: null, createdAt: serverTimestamp() });
-                }
+                    const data = memberSnap.data(); userRole = data.role; isAuthorized = (data.active === true && !!data.role); 
+                } else { await setDoc(doc(db, 'workspaces', WORKSPACE, 'members', user.uid), { email: user.email, active: false, role: null, createdAt: serverTimestamp() }); }
             } catch (e) { console.warn(e); }
             return isAuthorized;
         }
 
         function getRoleName(r) { return { 'admin': '最高管理員', 'samsung': '三星人員', 'calgit': '卡爾吉特', 'worker': '現場維護' }[r] || '未授權'; }
 
-        document.getElementById('btn-toggle-password').addEventListener('click', () => {
+        document.getElementById('btn-toggle-password')?.addEventListener('click', () => {
             const pwdInput = document.getElementById('login-password');
             const icon = document.getElementById('icon-toggle-password');
-            if (pwdInput.type === 'password') { pwdInput.type = 'text'; icon.classList.replace('fa-eye', 'fa-eye-slash'); } 
-            else { pwdInput.type = 'password'; icon.classList.replace('fa-eye'); }
+            if(pwdInput && icon) {
+                if (pwdInput.type === 'password') { pwdInput.type = 'text'; icon.classList.replace('fa-eye', 'fa-eye-slash'); } 
+                else { pwdInput.type = 'password'; icon.classList.replace('fa-eye'); }
+            }
         });
 
-        // 獨立的「登入」邏輯
-        document.getElementById('btn-login-email').addEventListener('click', async () => {
+        document.getElementById('btn-forgot-password')?.addEventListener('click', async () => {
             const email = document.getElementById('login-email').value.trim();
-            const pwd = document.getElementById('login-password').value;
-            if(!email || !pwd) return showToast('請填寫Email與密碼', 'error');
+            if(!email) return showToast('請先在上方的 Email 欄位輸入您的信箱', 'error');
             showLoader(true);
-            try { 
-                await signInWithEmailAndPassword(auth, email, pwd); 
-            } catch (err) {
-                if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
-                    showToast('登入失敗: 密碼錯誤。若您當初是使用 Google 建立帳號，請直接點擊最下方的 Google 按鈕！', 'error');
-                } else if (err.code === 'auth/user-not-found') {
-                    showToast('登入失敗: 找不到此帳號，請先點擊右側的註冊按鈕', 'error');
-                } else {
-                    showToast('登入失敗: ' + err.message, 'error');
-                }
+            try { await sendPasswordResetEmail(auth, email); showToast('密碼重設信已寄出，請去收信！', 'success'); } 
+            catch(err) { console.error(err); showToast('寄信失敗，請檢查 Email 是否正確', 'error'); }
+            showLoader(false);
+        });
+
+        document.getElementById('btn-login-email')?.addEventListener('click', async () => {
+            const email = document.getElementById('login-email').value.trim(); const pwd = document.getElementById('login-password').value;
+            if(!email || !pwd) return showToast('請填寫 Email 與密碼', 'error');
+            showLoader(true);
+            try { await signInWithEmailAndPassword(auth, email, pwd); } 
+            catch (err) {
+                if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') showToast('登入失敗: 密碼錯誤。若是 Google 帳號，請直接點擊下方按鈕！', 'error');
+                else if (err.code === 'auth/user-not-found') showToast('找不到帳號，請先點擊註冊', 'error');
+                else showToast('登入失敗: ' + err.message, 'error');
             }
             showLoader(false);
         });
 
-        document.getElementById('btn-logout').addEventListener('click', async () => {
+        document.getElementById('btn-register-email')?.addEventListener('click', async () => {
+            const email = document.getElementById('login-email').value.trim(); const pwd = document.getElementById('login-password').value;
+            if(!email || !pwd) return showToast('請填寫 Email 與密碼以建立帳號', 'error');
+            if(pwd.length < 6) return showToast('密碼至少需要 6 個字元', 'error');
             showLoader(true);
+            try { await createUserWithEmailAndPassword(auth, email, pwd); showToast('註冊成功！', 'success'); } 
+            catch (err) {
+                if (err.code === 'auth/email-already-in-use') showToast('此信箱已被註冊過', 'error');
+                else showToast('註冊失敗: ' + err.message, 'error');
+            }
+            showLoader(false);
+        });
+
+        document.getElementById('btn-login-google')?.addEventListener('click', async () => {
+            showLoader(true);
+            try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch(err) { console.error(err); showToast('登入失敗', 'error'); }
+            showLoader(false);
+        });
+
+        const doLogout = async () => {
+            showLoader(true);
+            if(activeTicketListener) activeTicketListener(); if(notificationListener) notificationListener(); if(reportsListener) reportsListener();
             try {
                 await signOut(auth);
+                const pwdEl = document.getElementById('login-password'); if(pwdEl) pwdEl.value = '';
                 showToast('已成功登出', 'success');
-            } catch (err) {
-                console.error(err);
-                showToast('登出失敗', 'error');
-            }
+            } catch (err) { showToast('登出失敗', 'error'); }
             showLoader(false);
-        });
-
-        document.getElementById('btn-logout-pending').addEventListener('click', async () => {
-            showLoader(true);
-            try {
-                await signOut(auth);
-            } catch (err) {
-                console.error(err);
-            }
-            showLoader(false);
-        });
+        };
+        
+        document.getElementById('btn-logout')?.addEventListener('click', doLogout);
+        document.getElementById('btn-logout-pending')?.addEventListener('click', doLogout);
 
         function setupNotificationListener() {
+            if(!currentUser) return;
             if(notificationListener) notificationListener(); 
             const q = query(collection(db, 'workspaces', WORKSPACE, 'tickets'));
             notificationListener = onSnapshot(q, (snapshot) => {
@@ -787,23 +786,18 @@
                     if (userRole === 'samsung') { if(t.status === 'samsung_review') count++; }
                 });
                 const badge = document.getElementById('badge-notifications');
+                if(!badge) return;
                 if (count > 0) { badge.textContent = count > 99 ? '99+' : count; badge.classList.remove('hidden', 'scale-0'); badge.classList.add('scale-100'); } 
                 else { badge.classList.add('scale-0'); setTimeout(() => badge.classList.add('hidden'), 300); }
-            });
+            }, e => console.warn("Notice Listener Error:", e));
         }
-        
-        document.getElementById('btn-header-notifications').addEventListener('click', () => {
-            filters = { status: 'all', keyword: '', category: '', sort: 'desc' };
-            document.getElementById('search-keyword').value = '';
-            document.getElementById('search-category').value = '';
-            document.querySelectorAll('.filter-btn').forEach(b => { b.classList.replace('bg-blue-100', 'bg-gray-100'); b.classList.replace('text-blue-700', 'text-gray-600'); });
-            const allBtn = document.querySelector('.filter-btn[data-filter="all"]');
-            if (allBtn) { allBtn.classList.replace('bg-gray-100', 'bg-blue-100'); allBtn.classList.replace('text-gray-600', 'text-blue-700'); }
-            navigate('dashboard');
-        });
+
+        document.getElementById('search-keyword')?.addEventListener('input', (e) => { filters.keyword = e.target.value.trim().toLowerCase(); renderTicketsList(); });
+        document.getElementById('search-category')?.addEventListener('change', (e) => { filters.category = e.target.value; renderTicketsList(); });
+        document.getElementById('btn-sort-time')?.addEventListener('click', () => { filters.sort = filters.sort === 'desc' ? 'asc' : 'desc'; renderTicketsList(); });
 
         function updateDashboardBadges() {
-            if(!Array.isArray(allTicketsCache) || !currentUser) return; // 【新增】登出防護
+            if(!Array.isArray(allTicketsCache) || !currentUser) return; 
             let baseTickets = [...allTicketsCache];
             if (userRole === 'worker') baseTickets = baseTickets.filter(t => (t.assignedUids || []).includes(currentUser.uid));
             
@@ -817,29 +811,23 @@
             ['pending', 'active', 'review'].forEach(key => {
                 const badge = document.getElementById(`badge-filter-${key}`);
                 if (badge) {
-                    if (counts[key] > 0) {
-                        badge.textContent = counts[key] > 99 ? '99+' : counts[key];
-                        badge.classList.remove('hidden');
-                    } else {
-                        badge.classList.add('hidden');
-                    }
+                    if (counts[key] > 0) { badge.textContent = counts[key] > 99 ? '99+' : counts[key]; badge.classList.remove('hidden'); } 
+                    else { badge.classList.add('hidden'); }
                 }
             });
         }
 
         function loadTickets() {
+            if(!currentUser) return;
+            const list = document.getElementById('tickets-list'); if(!list) return;
             if(activeTicketListener) activeTicketListener();
-            document.getElementById('tickets-list').innerHTML = '<div class="text-center py-6"><div class="spinner inline-block"></div></div>';
-            let q = query(collection(db, 'workspaces', WORKSPACE, 'tickets'), orderBy('createdAt', 'desc'));
+            list.innerHTML = '<div class="text-center py-10"><div class="spinner inline-block"></div></div>';
+            
+            const q = query(collection(db, 'workspaces', WORKSPACE, 'tickets'), orderBy('createdAt', 'desc'));
             activeTicketListener = onSnapshot(q, (snapshot) => {
-                allTicketsCache = [];
-                snapshot.forEach(doc => allTicketsCache.push({ id: doc.id, ...doc.data() }));
-                updateDashboardBadges(); 
-                renderTicketsList(); 
-            }, (err) => { 
-                console.error("Firebase Snapshot Error:", err);
-                document.getElementById('tickets-list').innerHTML = '<p class="text-sm text-red-500 text-center py-4">讀取失敗，請確認權限設定。</p>'; 
-            });
+                allTicketsCache = []; snapshot.forEach(doc => allTicketsCache.push({ id: doc.id, ...doc.data() }));
+                updateDashboardBadges(); renderTicketsList(); 
+            }, (err) => { console.error(err); list.innerHTML = '<p class="text-sm text-red-500 text-center py-6 font-bold">讀取失敗，請確認資料庫權限。</p>'; });
         }
 
         function getCategoryLabel(code, otherName) {
@@ -849,81 +837,68 @@
         }
 
         function renderTicketsList() {
-            const list = document.getElementById('tickets-list');
-            if (!currentUser) return; // 【新增】登出防護
+            if (!currentUser) return;
+            const list = document.getElementById('tickets-list'); if(!list) return;
             let tickets = [...allTicketsCache];
 
-            if (userRole === 'worker') { tickets = tickets.filter(t => (t.assignedUids || []).includes(currentUser.uid)); }
+            if (userRole === 'worker') tickets = tickets.filter(t => (t.assignedUids || []).includes(currentUser.uid));
             if (filters.status === 'pending') tickets = tickets.filter(t => t.status === 'submitted');
-            if (filters.status === 'active') tickets = tickets.filter(t => t.status === 'assigned' || t.status === 'in_progress');
+            if (filters.status === 'active') tickets = tickets.filter(t => ['assigned','in_progress'].includes(t.status));
             if (filters.status === 'review') tickets = tickets.filter(t => t.status.includes('review'));
             if (filters.category) tickets = tickets.filter(t => t.categoryCode === filters.category);
             if (filters.keyword) tickets = tickets.filter(t => t.id.toLowerCase().includes(filters.keyword) || (t.storeSnapshot?.storeName || '').toLowerCase().includes(filters.keyword));
 
-            // 安全的日期排序防護機制
             tickets.sort((a, b) => {
-                const ta = (a.createdAt && typeof a.createdAt.toMillis === 'function') ? a.createdAt.toMillis() : 0; 
-                const tb = (b.createdAt && typeof b.createdAt.toMillis === 'function') ? b.createdAt.toMillis() : 0;
+                const ta = (a.createdAt?.toMillis) ? a.createdAt.toMillis() : 0; 
+                const tb = (b.createdAt?.toMillis) ? b.createdAt.toMillis() : 0;
                 return filters.sort === 'desc' ? (tb - ta) : (ta - tb);
             });
 
             list.innerHTML = '';
-            if (tickets.length === 0) return list.innerHTML = '<div class="text-center text-gray-500 py-10"><i class="fas fa-inbox text-3xl mb-2 opacity-50"></i><p>沒有符合的案件</p></div>';
+            if (tickets.length === 0) return list.innerHTML = '<div class="text-center text-gray-500 py-12"><div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-inbox text-2xl text-gray-300"></i></div><p class="font-medium text-sm">沒有符合的案件</p></div>';
 
             tickets.forEach(t => {
-                const statusUI = STATUS_MAP[t.status] || {label: t.status, color: 'bg-gray-200'};
-                
-                // 安全的日期轉換防護機制
+                const statusUI = STATUS_MAP[t.status] || {label: t.status, color: 'bg-gray-200 border-gray-300'};
                 let dateStr = '處理中...';
-                if (t.createdAt && typeof t.createdAt.toDate === 'function') {
-                    dateStr = t.createdAt.toDate().toLocaleDateString('zh-TW', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
-                }
+                if (t.createdAt?.toDate) dateStr = t.createdAt.toDate().toLocaleDateString('zh-TW', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
 
                 const card = document.createElement('div');
-                card.className = "bg-white p-4 rounded-xl shadow-sm border border-gray-100 active:bg-gray-50 transition-colors cursor-pointer";
+                card.className = "bg-white p-4 rounded-xl shadow-sm border border-gray-100 active:scale-[0.98] transition-transform cursor-pointer relative overflow-hidden";
                 card.onclick = () => viewTicketDetail(t.id);
                 card.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-xs font-mono text-gray-400">#${t.id.slice(-6).toUpperCase()}</span>
-                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${statusUI.color}">${statusUI.label}</span>
+                    <div class="absolute top-0 left-0 w-1 h-full ${statusUI.color.split(' ')[0]}"></div>
+                    <div class="flex justify-between items-start mb-2 pl-2">
+                        <span class="text-xs font-mono text-gray-400 font-medium">#${t.id.slice(-6).toUpperCase()}</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${statusUI.color}">${statusUI.label}</span>
                     </div>
-                    <h3 class="font-bold text-gray-800 text-sm mb-1">${t.storeSnapshot?.storeName || '未知名稱'} - ${getCategoryLabel(t.categoryCode, t.otherCategoryName)}</h3>
-                    <p class="text-xs text-gray-600 line-clamp-2 mb-3">${t.summary || '無摘要'}</p>
-                    <div class="flex justify-between items-center mt-2 border-t pt-2">
-                        <span class="text-[10px] text-gray-400"><i class="far fa-clock mr-1"></i>${dateStr}</span>
-                        <button class="text-blue-600 text-[10px] font-bold">查看詳情 <i class="fas fa-chevron-right ml-1"></i></button>
+                    <h3 class="font-bold text-gray-800 text-sm mb-1.5 pl-2 leading-snug">${t.storeSnapshot?.storeName || '未知'} - ${getCategoryLabel(t.categoryCode, t.otherCategoryName)}</h3>
+                    <p class="text-xs text-gray-500 line-clamp-2 mb-3 pl-2 leading-relaxed">${t.summary || '無摘要說明'}</p>
+                    <div class="flex justify-between items-center mt-2 border-t border-gray-50 pt-2.5 pl-2">
+                        <span class="text-[10px] text-gray-400 font-medium"><i class="far fa-clock mr-1"></i>${dateStr}</span>
+                        <span class="text-blue-600 text-[10px] font-bold flex items-center group">詳情 <i class="fas fa-chevron-right ml-1 group-hover:translate-x-1 transition-transform"></i></span>
                     </div>`;
                 list.appendChild(card);
             });
         }
 
         function renderMarkdownToHTML(md) {
+            if(!md) return "";
             let mermaidBlocks = [];
             
-            // 1. 保護 Mermaid
-            let processedMd = md.replace(/```mermaid\n([\s\S]*?)```/g, function(match, p1) {
-                mermaidBlocks.push(p1);
-                return `<!--MERMAID_BLOCK_${mermaidBlocks.length - 1}-->`;
+            let processedMd = md.replace(/```mermaid\n([\s\S]*?)```/g, (match, p1) => {
+                mermaidBlocks.push(p1); return `<!--MERMAID_BLOCK_${mermaidBlocks.length - 1}-->`;
             });
 
-            // 2. 強化表格轉換 (支援 Markdown 表格，讓 Word 認得)
-            processedMd = processedMd.replace(/^\|(.+)\|$/gm, function(match) {
-                return `<tr>${match.split('|').filter(Boolean).map(c => `<td>${c.trim()}</td>`).join('')}</tr>`;
-            });
-            processedMd = processedMd.replace(/(<tr>.*?<\/tr>\n?)+/g, function(match) {
+            processedMd = processedMd.replace(/^\|(.+)\|$/gm, (match) => `<tr>${match.split('|').filter(Boolean).map(c => `<td>${c.trim()}</td>`).join('')}</tr>`);
+            processedMd = processedMd.replace(/(<tr>.*?<\/tr>\n?)+/g, (match) => {
                 let rows = match.split('</tr>').filter(Boolean).map(r => r + '</tr>');
                 if(rows.length === 0) return '';
-                let header = rows.shift().replace(/<td>/g, '<th style="background-color: #f3f4f6; padding: 8px; border: 1px solid #d1d5db; font-weight: bold;">').replace(/<\/td>/g, '</th>');
-                let html = `<table style="width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; border: 1px solid #d1d5db;"><thead>${header}</thead><tbody>`;
-                rows.forEach(r => { 
-                    if(!r.includes('---')) {
-                        html += r.replace(/<td>/g, '<td style="padding: 8px; border: 1px solid #d1d5db;">');
-                    } 
-                });
+                let header = rows.shift().replace(/<td>/g, '<th style="background-color:#f8fafc; padding:10px; border:1px solid #e2e8f0; font-weight:bold;">').replace(/<\/td>/g, '</th>');
+                let html = `<table style="width:100%; border-collapse:collapse; margin:16px 0; font-size:14px; border:1px solid #e2e8f0;"><thead>${header}</thead><tbody>`;
+                rows.forEach(r => { if(!r.includes('---')) html += r.replace(/<td>/g, '<td style="padding:10px; border:1px solid #e2e8f0; color:#475569;">'); });
                 return html + `</tbody></table>`;
             });
 
-            // 3. 標題與排版
             processedMd = processedMd.replace(/^### (.*$)/gim, '<h3>$1</h3>');
             processedMd = processedMd.replace(/^## (.*$)/gim, '<h2>$1</h2>');
             processedMd = processedMd.replace(/^# (.*$)/gim, '<h1>$1</h1>');
@@ -932,83 +907,95 @@
             processedMd = processedMd.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
             processedMd = processedMd.replace(/^(?!<[a-z]|<!--|<ul>|<table>|<h)(.*$)/gim, '<p>$1</p>');
 
-            // 4. 恢復 Mermaid
-            processedMd = processedMd.replace(/<!--MERMAID_BLOCK_(\d+)-->/g, function(match, index) {
-                return `<div class="mermaid overflow-x-auto my-4 flex justify-center">${mermaidBlocks[index] || ''}</div>`;
+            processedMd = processedMd.replace(/<!--MERMAID_BLOCK_(\d+)-->/g, (match, index) => {
+                return `<div class="mermaid overflow-x-auto my-6 flex justify-center bg-gray-50 rounded-xl p-4">${mermaidBlocks[index] || ''}</div>`;
             });
-
             return processedMd;
         }
 
-        document.getElementById('ana-time-type').addEventListener('change', (e) => {
+        document.getElementById('ana-time-type')?.addEventListener('change', (e) => {
             document.querySelectorAll('.ana-input-group').forEach(el => el.classList.add('hidden'));
-            if (e.target.value !== 'all') {
-                document.getElementById(`ana-inputs-${e.target.value}`).classList.remove('hidden');
-            }
+            if (e.target.value !== 'all') { const target = document.getElementById(`ana-inputs-${e.target.value}`); if(target) target.classList.remove('hidden'); }
         });
 
-        document.getElementById('btn-save-ai').addEventListener('click', () => {
+        document.getElementById('btn-save-ai')?.addEventListener('click', () => {
             const key = document.getElementById('input-ai-key').value.trim(); if(!key) return;
-            geminiApiKey = key; document.getElementById('input-ai-key').value = '********'; showToast('API Key 已儲存', 'success');
+            geminiApiKey = key; localStorage.setItem('geminiApiKey', key); 
+            document.getElementById('input-ai-key').value = '********'; showToast('API Key 已儲存', 'success');
         });
-        
-        document.getElementById('btn-clear-ai').addEventListener('click', () => { 
-            geminiApiKey = ""; document.getElementById('input-ai-key').value = ''; showToast('已清除', 'success'); 
+        document.getElementById('btn-clear-ai')?.addEventListener('click', () => { 
+            geminiApiKey = ""; localStorage.removeItem('geminiApiKey'); 
+            document.getElementById('input-ai-key').value = ''; showToast('已清除', 'success'); 
         });
 
-        document.getElementById('btn-generate-analysis').addEventListener('click', async () => {
+        async function exportToWord(timeLabel) {
+            const btnWord = document.getElementById('btn-download-word');
+            const originalHtml = btnWord.innerHTML; btnWord.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>處理中...';
+            const contentClone = document.getElementById('report-content').cloneNode(true);
+            
+            const svgs = contentClone.querySelectorAll('svg');
+            for (let i = 0; i < svgs.length; i++) {
+                const svg = svgs[i];
+                try {
+                    if (!svg.getAttribute('xmlns')) svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+                    const svgData = new XMLSerializer().serializeToString(svg);
+                    const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
+                    const img = new Image();
+                    await new Promise((resolve) => {
+                        img.onload = () => {
+                            canvas.width = img.width || 600; canvas.height = img.height || 400;
+                            ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0);
+                            const newImg = document.createElement('img'); newImg.src = canvas.toDataURL('image/png');
+                            newImg.style.maxWidth = '100%'; newImg.style.display = 'block'; newImg.style.margin = '10px auto';
+                            svg.parentNode.replaceChild(newImg, svg); resolve();
+                        };
+                        img.onerror = resolve; img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+                    });
+                } catch(e) { console.warn(e); }
+            }
+
+            const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>分析報告</title><style>body { font-family: '微軟正黑體', 'Inter', sans-serif; line-height:1.5; } h1, h2, h3 { color: #1e3a8a; } img { max-width: 100%; height: auto; }</style></head><body>";
+            const fullHtml = header + contentClone.innerHTML + "</body></html>";
+            const blob = new Blob(['\ufeff', fullHtml], { type: 'application/msword' });
+            const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `分析報告_${timeLabel.replace(/ /g, '_')}.doc`;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link); btnWord.innerHTML = originalHtml;
+        }
+
+        document.getElementById('btn-generate-analysis')?.addEventListener('click', async () => {
             if(allTicketsCache.length === 0) return showToast('資料庫目前沒有案件', 'error');
             
             let targetTickets = [...allTicketsCache];
             const timeType = document.getElementById('ana-time-type').value;
             let timeLabel = '全部歷史累積';
 
-            // 篩選時間邏輯防呆保護
             try {
                 if (timeType === 'month') {
-                    const m = document.getElementById('ana-val-month').value;
-                    if (!m) return showToast('請選擇月份', 'error');
-                    targetTickets = targetTickets.filter(t => {
-                        if(!t.createdAt || typeof t.createdAt.toDate !== 'function') return false;
-                        const d = t.createdAt.toDate();
-                        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2, '0')}` === m;
-                    });
+                    const m = document.getElementById('ana-val-month').value; if (!m) return showToast('請選擇月份', 'error');
+                    targetTickets = targetTickets.filter(t => t.createdAt?.toDate && `${t.createdAt.toDate().getFullYear()}-${String(t.createdAt.toDate().getMonth()+1).padStart(2, '0')}` === m);
                     timeLabel = `${m} 月份`;
                 } else if (timeType === 'quarter') {
-                    const y = document.getElementById('ana-val-q-year').value;
-                    const q = document.getElementById('ana-val-q-quarter').value;
+                    const y = document.getElementById('ana-val-q-year').value; const q = document.getElementById('ana-val-q-quarter').value;
                     if (!y) return showToast('請輸入年度', 'error');
                     targetTickets = targetTickets.filter(t => {
-                        if(!t.createdAt || typeof t.createdAt.toDate !== 'function') return false;
-                        const d = t.createdAt.toDate();
-                        const tM = d.getMonth() + 1;
-                        let tQ = 'Q1';
-                        if(tM >= 4 && tM <= 6) tQ = 'Q2';
-                        else if(tM >= 7 && tM <= 9) tQ = 'Q3';
-                        else if(tM >= 10 && tM <= 12) tQ = 'Q4';
+                        if(!t.createdAt?.toDate) return false;
+                        const d = t.createdAt.toDate(); const tM = d.getMonth() + 1;
+                        let tQ = 'Q1'; if(tM>=4&&tM<=6) tQ='Q2'; else if(tM>=7&&tM<=9) tQ='Q3'; else if(tM>=10) tQ='Q4';
                         return d.getFullYear().toString() === y && tQ === q;
                     });
                     timeLabel = `${y}年度 ${q} 季度`;
                 } else if (timeType === 'year') {
-                    const y = document.getElementById('ana-val-year').value;
-                    if (!y) return showToast('請輸入年度', 'error');
-                    targetTickets = targetTickets.filter(t => {
-                        if(!t.createdAt || typeof t.createdAt.toDate !== 'function') return false;
-                        return t.createdAt.toDate().getFullYear().toString() === y;
-                    });
+                    const y = document.getElementById('ana-val-year').value; if (!y) return showToast('請輸入年度', 'error');
+                    targetTickets = targetTickets.filter(t => t.createdAt?.toDate && t.createdAt.toDate().getFullYear().toString() === y);
                     timeLabel = `${y} 年度`;
                 }
-            } catch(e) {
-                console.warn("Time filter error", e);
-                return showToast('日期篩選發生錯誤', 'error');
-            }
+            } catch(e) { return showToast('日期篩選發生錯誤', 'error'); }
 
-            if (userRole === 'worker') { targetTickets = targetTickets.filter(t => (t.assignedUids || []).includes(currentUser.uid)); }
-            if(targetTickets.length === 0) return showToast(`所選期間 (${timeLabel}) 無案件可供分析`, 'error');
+            if (userRole === 'worker') targetTickets = targetTickets.filter(t => (t.assignedUids || []).includes(currentUser.uid));
+            if(targetTickets.length === 0) return showToast(`所選期間 (${timeLabel}) 無案件可分析`, 'error');
 
             document.getElementById('modal-report').classList.remove('hidden');
             const reportContent = document.getElementById('report-content');
-            reportContent.innerHTML = '<div class="text-center py-10"><div class="spinner inline-block"></div><p class="mt-2 text-sm text-gray-500">正在整理數據與生成報告...</p></div>';
+            reportContent.innerHTML = '<div class="text-center py-10"><div class="spinner inline-block"></div><p class="mt-4 text-sm font-medium text-gray-500">正在整理數據與生成報告...</p></div>';
 
             document.getElementById('btn-download-word').classList.add('hidden'); 
             document.getElementById('btn-save-report').classList.add('hidden');
@@ -1017,233 +1004,113 @@
             let stats = { total: targetTickets.length, closed: 0, pending: 0, active: 0, review: 0, categories: {} };
             
             targetTickets.forEach(t => {
-                const d = (t.createdAt && typeof t.createdAt.toDate === 'function') ? t.createdAt.toDate().toLocaleString('zh-TW') : '';
+                const d = t.createdAt?.toDate ? t.createdAt.toDate().toLocaleString('zh-TW') : '';
                 const catName = getCategoryLabel(t.categoryCode, t.otherCategoryName);
                 const statusName = STATUS_MAP[t.status]?.label || t.status;
-                
                 excelData.push([t.id, d, t.channelType, t.storeSnapshot?.storeName || '', catName, statusName, (t.summary || '').replace(/\n/g, ' ')]);
 
-                if (t.status === 'closed') stats.closed++;
-                else if (t.status === 'submitted') stats.pending++;
-                else if (t.status.includes('review')) stats.review++;
-                else stats.active++;
+                if (t.status === 'closed') stats.closed++; else if (t.status === 'submitted') stats.pending++; else if (t.status.includes('review')) stats.review++; else stats.active++;
                 stats.categories[catName] = (stats.categories[catName] || 0) + 1;
             });
 
             const btnExcel = document.getElementById('btn-download-excel');
             btnExcel.onclick = () => {
                 try {
-                    const ws = XLSX.utils.aoa_to_sheet(excelData);
-                    const wb = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(wb, ws, "案件報表");
-                    XLSX.writeFile(wb, `Cogito_Report_${timeLabel.replace(/ /g, '_')}.xlsx`);
-                } catch(e) { console.error(e); showToast('Excel 建立失敗', 'error'); }
+                    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(excelData), "案件報表");
+                    XLSX.writeFile(wb, `報表_${timeLabel.replace(/ /g, '_')}.xlsx`);
+                } catch(e) { showToast('Excel 建立失敗', 'error'); }
             };
 
             if (!geminiApiKey) {
-                let html = `<h2>基礎統計報表 (${timeLabel})</h2>
-                            <p><strong>總案件數：</strong> ${stats.total}</p>
-                            <p><strong>已結案：</strong> ${stats.closed} | <strong>處理中：</strong> ${stats.active} | <strong>待驗收：</strong> ${stats.review} | <strong>待派工：</strong> ${stats.pending}</p>
-                            <h3>類別分佈</h3><ul>`;
-                for (let c in stats.categories) { html += `<li>${c}：${stats.categories[c]} 件</li>`; }
-                html += `</ul>
-                         <div class="mt-6 bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
-                            <i class="fas fa-sparkles text-2xl text-purple-500 mb-2"></i>
-                            <h4 class="text-sm font-bold text-purple-800 mb-1">解鎖 AI 深度分析與圖表匯出</h4>
-                            <p class="text-xs text-purple-600 mb-3">只要輸入 Google Gemini API Key，系統就能為您自動繪製視覺化圖表、撰寫異常分析與營運建議，並支援一鍵打包為 Word 報告檔！</p>
-                            <a href="https://aistudio.google.com/app/apikey" target="_blank" class="inline-block bg-purple-600 text-white text-xs font-bold px-4 py-2 rounded shadow hover:bg-purple-700 transition-colors">前往免費取得 API Key</a>
-                         </div>`;
-                reportContent.innerHTML = html;
-                btnExcel.classList.remove('hidden');
-                return;
+                let html = `<h2>基礎統計報表 (${timeLabel})</h2><p><strong>總案件數：</strong> ${stats.total}</p><p><strong>已結案：</strong> ${stats.closed} | <strong>處理中：</strong> ${stats.active} | <strong>待驗收：</strong> ${stats.review} | <strong>待派工：</strong> ${stats.pending}</p><h3>類別分佈</h3><ul>`;
+                for (let c in stats.categories) html += `<li>${c}：${stats.categories[c]} 件</li>`;
+                html += `</ul><div class="mt-8 bg-purple-50 border border-purple-200 rounded-xl p-5 text-center shadow-inner"><i class="fas fa-sparkles text-3xl text-purple-500 mb-3 block"></i><h4 class="font-bold text-purple-800 mb-2">解鎖 AI 深度分析與專業圖表</h4><p class="text-sm text-purple-600 mb-4">輸入 API Key 即可自動撰寫營運建議、繪製圓餅圖並匯出 Word！</p><a href="https://aistudio.google.com/app/apikey" target="_blank" class="inline-block bg-purple-600 text-white text-sm font-bold px-5 py-2.5 rounded-lg shadow-md hover:bg-purple-700 transition-colors">前往免費申請</a></div>`;
+                reportContent.innerHTML = html; btnExcel.classList.remove('hidden'); return;
             }
 
             try {
-                const prompt = `你是一個專業的營運分析師。請根據以下系統提供的維護案件統計數據，撰寫一份結構化、排版優美且具備專業度的營運分析報告。
-                
-                必須包含以下結構 (請使用 Markdown 標題，如 ## 或 ###)：
+                const prompt = `你是一個專業的營運分析師。請根據以下系統提供的維護案件數據，撰寫一份結構化、排版優美且具備專業度的營運分析報告。
+                必須包含結構 (使用 Markdown 標題 ## 或 ###)：
                 1. 執行總結 (Overview)
-                2. 數據分佈與視覺化圖表 (請務必使用 Mermaid 語法，以 \`\`\`mermaid 包裝，繪製一個 pie chart 呈現故障類別比例)
-                3. 案件明細表格 (請使用 Markdown 表格語法 |---|---| 呈現資料總覽)
-                4. 異常與趨勢分析 (Anomaly Analysis)
-                5. 營運與 SLA 改善建議 (Recommendations)
-                
-                數據資料：
-                時間範圍：${timeLabel}
-                總案件數：${stats.total} 件
-                目前狀態分佈：已結案 ${stats.closed} 件, 維修中 ${stats.active} 件, 待驗收 ${stats.review} 件, 待派工 ${stats.pending} 件。
-                故障類別分佈：${JSON.stringify(stats.categories)}
-                
-                請保持客觀、專業的語氣，並直接給出報告內容。`;
+                2. 數據分佈圖表 (務必使用 Mermaid 語法 \`\`\`mermaid 包裝，繪製一個 pie chart 呈現故障類別比例)
+                3. 案件明細表格 (使用 Markdown 表格 |---|---| 呈現數據)
+                4. 異常與趨勢分析
+                5. 營運與 SLA 改善建議
+                數據：時間範圍：${timeLabel}，總計：${stats.total}件 (已結案${stats.closed}, 處理中${stats.active}, 待驗收${stats.review}, 待派工${stats.pending})。類別：${JSON.stringify(stats.categories)}。請直接輸出報告內容。`;
 
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
-                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-                
-                const res = await fetch(url, { method: 'POST', body: JSON.stringify(payload) });
-                if(!res.ok) throw new Error(res.statusText);
-                const data = await res.json();
-                const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || '無回覆';
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, { method: 'POST', body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] }) });
+                if(!res.ok) throw new Error("API請求失敗");
+                const aiResponse = (await res.json()).candidates?.[0]?.content?.parts?.[0]?.text || '無回覆';
                 
                 reportContent.innerHTML = renderMarkdownToHTML(aiResponse);
-                
-                try { 
-                    if(typeof mermaid !== 'undefined') {
-                        mermaid.init(undefined, document.querySelectorAll('.mermaid')); 
-                    }
-                } catch(err) { console.warn('Mermaid render error', err); }
+                try { if(typeof mermaid !== 'undefined') mermaid.init(undefined, document.querySelectorAll('.mermaid')); } catch(err) { console.warn('Mermaid render error', err); }
 
-                currentReportPayload = {
-                    timeLabel: timeLabel,
-                    markdown: aiResponse,
-                    excelData: JSON.stringify(excelData),
-                    createdBy: currentUser.uid,
-                    createdAt: serverTimestamp()
-                };
-                
+                currentReportPayload = { timeLabel, markdown: aiResponse, excelData: JSON.stringify(excelData), createdBy: currentUser.uid, createdAt: serverTimestamp() };
                 document.getElementById('btn-save-report').classList.remove('hidden');
                 
                 const btnWord = document.getElementById('btn-download-word');
-                btnWord.classList.remove('hidden');
-                btnWord.onclick = () => exportToWord(timeLabel);
+                btnWord.classList.remove('hidden'); btnWord.onclick = () => exportToWord(timeLabel);
+                btnExcel.classList.remove('hidden');
 
-            } catch(e) {
-                console.error(e);
-                reportContent.innerHTML = `<p class="text-red-500">AI 分析失敗，可能是 API Key 錯誤或額度不足。</p><p class="text-xs mt-2">${e.message}</p>`;
-            }
+            } catch(e) { reportContent.innerHTML = `<div class="p-4 bg-red-50 text-red-600 rounded-xl font-bold"><i class="fas fa-exclamation-triangle mr-2"></i>分析失敗，請檢查 API Key 是否正確或額度不足。</div>`; }
         });
 
-        async function exportToWord(timeLabel) {
-            const btnWord = document.getElementById('btn-download-word');
-            const originalHtml = btnWord.innerHTML;
-            btnWord.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>處理中...';
-            const reportContent = document.getElementById('report-content');
-            const contentClone = reportContent.cloneNode(true);
-            
-            // 將 SVG 強制拍照為 PNG 確保 Word 讀得懂
-            const svgs = contentClone.querySelectorAll('svg');
-            for (let i = 0; i < svgs.length; i++) {
-                const svg = svgs[i];
-                try {
-                    if (!svg.getAttribute('xmlns')) svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-                    const svgData = new XMLSerializer().serializeToString(svg);
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    const img = new Image();
-                    
-                    await new Promise((resolve) => {
-                        img.onload = () => {
-                            canvas.width = img.width || 600; canvas.height = img.height || 400;
-                            ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-                            ctx.drawImage(img, 0, 0);
-                            const pngData = canvas.toDataURL('image/png');
-                            const newImg = document.createElement('img');
-                            newImg.src = pngData; newImg.style.maxWidth = '100%'; newImg.style.margin = '0 auto'; newImg.style.display = 'block';
-                            svg.parentNode.replaceChild(newImg, svg);
-                            resolve();
-                        };
-                        img.onerror = resolve;
-                        img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
-                    });
-                } catch(e) { console.warn('SVG conversion failed', e); }
-            }
-
-            const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>分析報告</title><style>body { font-family: '微軟正黑體', 'Inter', sans-serif; } h1, h2, h3 { color: #1e3a8a; } img { max-width: 100%; height: auto; }</style></head><body>";
-            const footer = "</body></html>";
-            const fullHtml = header + contentClone.innerHTML + footer;
-            
-            const blob = new Blob(['\ufeff', fullHtml], { type: 'application/msword' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a'); link.href = url; link.download = `Cogito_Analysis_Report_${timeLabel.replace(/ /g, '_')}.doc`;
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
-            
-            btnWord.innerHTML = originalHtml;
-        }
-
-        document.getElementById('btn-save-report').addEventListener('click', async () => {
+        document.getElementById('btn-save-report')?.addEventListener('click', async () => {
             if(!currentReportPayload) return;
             showLoader(true);
-            try {
-                await addDoc(collection(db, 'workspaces', WORKSPACE, 'reports'), currentReportPayload);
-                showToast('報告已成功儲存至雲端', 'success');
-                document.getElementById('btn-save-report').classList.add('hidden');
-            } catch(e) { console.error(e); showToast('儲存失敗', 'error'); }
+            try { await addDoc(collection(db, 'workspaces', WORKSPACE, 'reports'), currentReportPayload); showToast('報告已成功儲存', 'success'); document.getElementById('btn-save-report').classList.add('hidden'); } 
+            catch(e) { showToast('儲存失敗', 'error'); }
             showLoader(false);
         });
 
         function loadHistoricalReports() {
             if(reportsListener) return;
-            const list = document.getElementById('reports-history-list');
-            list.innerHTML = '<div class="text-center py-4"><div class="spinner inline-block"></div></div>';
+            const list = document.getElementById('reports-history-list'); if(!list) return;
             const q = query(collection(db, 'workspaces', WORKSPACE, 'reports'), orderBy('createdAt', 'desc'));
             reportsListener = onSnapshot(q, (snapshot) => {
-                reportsCache = [];
-                list.innerHTML = '';
-                if (snapshot.empty) return list.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">尚無雲端報告</p>';
+                reportsCache = []; list.innerHTML = '';
+                if (snapshot.empty) return list.innerHTML = '<div class="text-center py-6 bg-gray-50 rounded-xl border border-gray-100"><i class="fas fa-folder-open text-gray-300 text-3xl mb-2"></i><p class="text-sm font-medium text-gray-500">尚無儲存的歷史報告</p></div>';
                 snapshot.forEach(doc => {
-                    const data = doc.data();
-                    reportsCache.push({id: doc.id, ...data});
-                    const d = (data.createdAt && typeof data.createdAt.toDate === 'function') ? data.createdAt.toDate().toLocaleString('zh-TW') : '剛剛';
+                    const data = doc.data(); reportsCache.push({id: doc.id, ...data});
+                    const d = data.createdAt?.toDate ? data.createdAt.toDate().toLocaleDateString('zh-TW') : '剛剛';
                     list.innerHTML += `
-                        <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 flex justify-between items-center mb-2 cursor-pointer active:bg-gray-50 hover:border-blue-300 transition-colors" onclick="viewHistoricalReport('${doc.id}')">
-                            <div>
-                                <div class="font-bold text-sm text-gray-800"><i class="fas fa-file-contract text-blue-600 mr-2"></i>${data.timeLabel} 營運報告</div>
-                                <div class="text-xs text-gray-500 mt-1"><i class="far fa-clock mr-1"></i>${d} 儲存</div>
-                            </div>
-                            <button class="text-blue-500 px-3 py-1.5 bg-blue-50 rounded font-bold text-xs shadow-sm">調閱</button>
-                        </div>
-                    `;
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center mb-3 cursor-pointer active:scale-95 transition-all hover:border-blue-300" onclick="viewHistoricalReport('${doc.id}')">
+                            <div><div class="font-bold text-sm text-gray-800"><i class="fas fa-file-contract text-blue-500 mr-2"></i>${data.timeLabel} 分析報告</div><div class="text-xs text-gray-500 mt-1 font-medium"><i class="far fa-clock mr-1"></i>${d} 儲存</div></div>
+                            <button class="text-blue-600 px-4 py-2 bg-blue-50 rounded-lg font-bold text-xs shadow-sm hover:bg-blue-100 transition-colors">調閱</button>
+                        </div>`;
                 });
-            }, (err) => { console.error(err); list.innerHTML = '<p class="text-sm text-red-500 text-center py-4">讀取失敗，請確認權限</p>'; });
+            }, (err) => { list.innerHTML = '<p class="text-sm text-red-500">讀取失敗</p>'; });
         }
 
         window.viewHistoricalReport = function(reportId) {
-            const report = reportsCache.find(r => r.id === reportId);
-            if(!report) return showToast('找不到報告', 'error');
-
-            document.getElementById('modal-report').classList.remove('hidden');
-            document.getElementById('btn-save-report').classList.add('hidden');
-
-            const reportContent = document.getElementById('report-content');
-            reportContent.innerHTML = renderMarkdownToHTML(report.markdown);
-            try { 
-                if(typeof mermaid !== 'undefined') {
-                    mermaid.init(undefined, document.querySelectorAll('.mermaid')); 
-                }
-            } catch(err) { console.warn(err); }
-
-            const btnWord = document.getElementById('btn-download-word');
-            btnWord.classList.remove('hidden');
-            btnWord.onclick = () => exportToWord(report.timeLabel);
-
-            const btnExcel = document.getElementById('btn-download-excel');
+            const report = reportsCache.find(r => r.id === reportId); if(!report) return;
+            document.getElementById('modal-report').classList.remove('hidden'); document.getElementById('btn-save-report').classList.add('hidden');
+            const rc = document.getElementById('report-content'); rc.innerHTML = renderMarkdownToHTML(report.markdown);
+            try { if(typeof mermaid !== 'undefined') mermaid.init(undefined, document.querySelectorAll('.mermaid')); } catch(e) {}
+            
+            const btnWord = document.getElementById('btn-download-word'); btnWord.classList.remove('hidden'); btnWord.onclick = () => exportToWord(report.timeLabel);
+            const btnExcel = document.getElementById('btn-download-excel'); btnExcel.classList.remove('hidden');
             btnExcel.onclick = () => {
                 try {
-                    const excelData = JSON.parse(report.excelData);
-                    const ws = XLSX.utils.aoa_to_sheet(excelData);
-                    const wb = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(wb, ws, "案件報表");
-                    XLSX.writeFile(wb, `Cogito_Report_${report.timeLabel.replace(/ /g, '_')}.xlsx`);
-                } catch(e) { console.error(e); showToast('Excel 資料解析失敗', 'error'); }
+                    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(JSON.parse(report.excelData)), "案件報表");
+                    XLSX.writeFile(wb, `歷史報表_${report.timeLabel.replace(/ /g, '_')}.xlsx`);
+                } catch(e) { showToast('Excel 解析失敗', 'error'); }
             };
         };
 
         function setupNewTicketForm() {
-            const channelSelect = document.getElementById('nt-channel');
-            const storeSelect = document.getElementById('nt-store');
-            const catSelect = document.getElementById('nt-category');
-            const otherContainer = document.getElementById('nt-other-container');
-
-            document.getElementById('form-new-ticket').reset();
-            storeSelect.disabled = true; catSelect.disabled = true;
-            otherContainer.classList.add('hidden');
-            document.getElementById('nt-photo-preview').innerHTML = '';
+            const channelSelect = document.getElementById('nt-channel'); const storeSelect = document.getElementById('nt-store'); const catSelect = document.getElementById('nt-category'); const otherContainer = document.getElementById('nt-other-container');
+            document.getElementById('form-new-ticket')?.reset();
+            if(storeSelect) storeSelect.disabled = true; if(catSelect) catSelect.disabled = true;
+            if(otherContainer) otherContainer.classList.add('hidden');
+            const preview = document.getElementById('nt-photo-preview'); if(preview) preview.innerHTML = '';
 
             channelSelect.onchange = (e) => {
                 const val = e.target.value;
                 if (!val) { storeSelect.disabled = true; catSelect.disabled = true; return; }
                 renderStoreDropdown(val);
                 catSelect.innerHTML = '<option value="">請選擇報修項目</option>';
-                CATEGORIES[val].forEach(c => { catSelect.innerHTML += `<option value="${c.id}">${c.label}</option>`; });
+                CATEGORIES[val].forEach(c => catSelect.innerHTML += `<option value="${c.id}">${c.label}</option>`);
                 catSelect.disabled = false;
             };
             catSelect.onchange = (e) => {
@@ -1253,11 +1120,11 @@
         }
 
         function renderStoreDropdown(channelType) {
-            const storeSelect = document.getElementById('nt-store');
-            storeSelect.innerHTML = '<option value="">請選擇門市</option>';
+            const select = document.getElementById('nt-store'); if(!select) return;
+            select.innerHTML = '<option value="">請選擇門市</option>';
             const filtered = storesCache.filter(s => s.channelType === channelType);
-            if (filtered.length === 0) { storeSelect.innerHTML = '<option value="">無可用門市，請聯絡管理員新增</option>'; storeSelect.disabled = true; } 
-            else { filtered.forEach(s => storeSelect.innerHTML += `<option value="${s.id}">${s.storeCode} - ${s.storeName}</option>`); storeSelect.disabled = false; }
+            if (filtered.length === 0) { select.innerHTML = '<option value="">無可用門市，請聯絡管理員</option>'; select.disabled = true; } 
+            else { filtered.forEach(s => select.innerHTML += `<option value="${s.id}">${s.storeCode} - ${s.storeName}</option>`); select.disabled = false; }
         }
 
         async function compressImage(file) {
@@ -1267,63 +1134,51 @@
                     const img = new Image();
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_DIM = 1600; let w = img.width, h = img.height;
+                        let w = img.width, h = img.height; const MAX_DIM = 1600;
                         if (w > h && w > MAX_DIM) { h *= MAX_DIM / w; w = MAX_DIM; } else if (h > w && h > MAX_DIM) { w *= MAX_DIM / h; h = MAX_DIM; }
                         canvas.width = w; canvas.height = h;
-                        const ctx = canvas.getContext('2d');
-                        ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, w, h);
-                        ctx.drawImage(img, 0, 0, w, h);
-                        canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.8);
+                        const ctx = canvas.getContext('2d'); ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, w, h); ctx.drawImage(img, 0, 0, w, h);
+                        canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.8);
                     };
-                    img.onerror = () => reject(new Error('圖片解析失敗'));
-                    img.src = e.target.result;
+                    img.onerror = () => reject(new Error('圖片解析失敗')); img.src = e.target.result;
                 };
-                reader.onerror = () => reject(new Error('檔案讀取失敗'));
-                reader.readAsDataURL(file);
+                reader.onerror = () => reject(new Error('讀取失敗')); reader.readAsDataURL(file);
             });
         }
 
-        document.getElementById('nt-photos').addEventListener('change', (e) => {
+        document.getElementById('nt-photos')?.addEventListener('change', (e) => {
             const files = Array.from(e.target.files).slice(0, 10);
             const container = document.getElementById('nt-photo-preview'); container.innerHTML = '';
-            files.forEach(f => { const url = URL.createObjectURL(f); container.innerHTML += `<div class="relative w-16 h-16 rounded overflow-hidden border"><img src="${url}" class="w-full h-full object-cover"></div>`; });
+            files.forEach(f => container.innerHTML += `<div class="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 shadow-sm"><img src="${URL.createObjectURL(f)}" class="w-full h-full object-cover"></div>`);
         });
 
-        document.getElementById('form-new-ticket').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!navigator.onLine) return showToast('目前無網路連線', 'error');
-
-            const channelType = document.getElementById('nt-channel').value;
-            const storeId = document.getElementById('nt-store').value;
-            const categoryCode = document.getElementById('nt-category').value;
-            const store = storesCache.find(s => s.id === storeId);
+        document.getElementById('form-new-ticket')?.addEventListener('submit', async (e) => {
+            e.preventDefault(); if (!navigator.onLine) return showToast('目前無網路連線', 'error');
+            const storeId = document.getElementById('nt-store').value; const store = storesCache.find(s => s.id === storeId);
             if (!store) return showToast('店家讀取失敗', 'error');
 
             showLoader(true);
             try {
                 const ticketRef = await addDoc(collection(db, 'workspaces', WORKSPACE, 'tickets'), {
-                    channelType, storeId, categoryCode,
+                    channelType: document.getElementById('nt-channel').value, storeId, categoryCode: document.getElementById('nt-category').value,
                     storeSnapshot: { storeCode: store.storeCode, storeName: store.storeName, region: store.region, address: store.address },
-                    otherCategoryName: categoryCode === 'OTHER' ? document.getElementById('nt-other-name').value.trim() : null,
-                    summary: document.getElementById('nt-description').value.trim().substring(0, 100),
-                    description: document.getElementById('nt-description').value.trim(),
-                    status: 'submitted', priority: 'normal', assignedUids: [], reporterUid: currentUser.uid, revision: 1, createdAt: serverTimestamp()
+                    otherCategoryName: document.getElementById('nt-category').value === 'OTHER' ? document.getElementById('nt-other-name').value.trim() : null,
+                    summary: document.getElementById('nt-description').value.trim().substring(0, 100), description: document.getElementById('nt-description').value.trim(),
+                    status: 'submitted', assignedUids: [], reporterUid: currentUser.uid, createdAt: serverTimestamp()
                 });
-
                 await addDoc(collection(db, 'workspaces', WORKSPACE, 'tickets', ticketRef.id, 'events'), { action: 'created', actorUid: currentUser.uid, serverTime: serverTimestamp() });
 
                 const files = document.getElementById('nt-photos').files;
                 if (files.length > 0) {
                     showToast('上傳照片中...');
                     for (let i=0; i<files.length; i++) {
-                        const blob = await compressImage(files[i]);
-                        const sRef = ref(storage, `workspaces/${WORKSPACE}/tickets/${ticketRef.id}/photos_${Date.now()}_${i}.jpg`);
+                        const blob = await compressImage(files[i]); const sRef = ref(storage, `workspaces/${WORKSPACE}/tickets/${ticketRef.id}/photos_${Date.now()}_${i}.jpg`);
                         await uploadBytesResumable(sRef, blob);
                         await addDoc(collection(db, 'workspaces', WORKSPACE, 'attachments'), { ticketId: ticketRef.id, storagePath: sRef.fullPath, downloadUrl: await getDownloadURL(sRef), uploadedBy: currentUser.uid, createdAt: serverTimestamp() });
                     }
                 }
-                showToast('報修已送出！', 'success'); navigate('dashboard');
-            } catch (err) { console.error(err); showToast('失敗: ' + err.message, 'error'); }
+                showToast('報修成功！', 'success'); navigate('dashboard');
+            } catch (err) { showToast('失敗: ' + err.message, 'error'); }
             showLoader(false);
         });
 
@@ -1331,8 +1186,7 @@
 
         async function viewTicketDetail(id) {
             currentTicketId = id; navigate('ticket-detail');
-            document.getElementById('td-title').textContent = '載入中...';
-            document.getElementById('td-actions-area').classList.add('hidden');
+            document.getElementById('td-title').textContent = '載入中...'; document.getElementById('td-actions-area').classList.add('hidden');
             
             if(detailListener) detailListener();
             detailListener = onSnapshot(doc(db, 'workspaces', WORKSPACE, 'tickets', id), async (docSnap) => {
@@ -1340,14 +1194,14 @@
                 const t = docSnap.data(); currentTicketData = t;
                 
                 document.getElementById('td-id').textContent = `#${id.toUpperCase()}`;
-                const statusUI = STATUS_MAP[t.status] || {label: t.status, color: 'bg-gray-200'};
-                document.getElementById('td-status-badge').className = `px-2 py-1 rounded text-xs font-bold whitespace-nowrap ${statusUI.color}`;
+                const statusUI = STATUS_MAP[t.status] || {label: t.status, color: 'bg-gray-200 border-gray-300'};
+                document.getElementById('td-status-badge').className = `px-3 py-1 rounded-full text-[10px] font-bold border whitespace-nowrap shadow-sm ${statusUI.color}`;
                 document.getElementById('td-status-badge').textContent = statusUI.label;
 
                 document.getElementById('td-title').textContent = getCategoryLabel(t.categoryCode, t.otherCategoryName);
                 document.getElementById('td-store').textContent = `[${t.channelType}] ${t.storeSnapshot?.storeName || ''}`;
                 document.getElementById('td-category').textContent = getCategoryLabel(t.categoryCode, t.otherCategoryName);
-                document.getElementById('td-time').textContent = (t.createdAt && typeof t.createdAt.toDate === 'function') ? t.createdAt.toDate().toLocaleString('zh-TW') : '';
+                document.getElementById('td-time').textContent = t.createdAt?.toDate ? t.createdAt.toDate().toLocaleString('zh-TW') : '';
                 document.getElementById('td-desc').textContent = t.description;
 
                 loadAttachments(id); loadTimeline(id); renderTicketActions(t);
@@ -1355,16 +1209,14 @@
         }
 
         async function loadAttachments(ticketId) {
-            const container = document.getElementById('td-photos');
-            const wrapper = document.getElementById('td-photos-container');
-            container.innerHTML = '<div class="spinner w-4 h-4 text-blue-500 mx-auto col-span-3"></div>';
-            wrapper.classList.remove('hidden');
+            const container = document.getElementById('td-photos'); const wrapper = document.getElementById('td-photos-container');
+            container.innerHTML = '<div class="spinner w-4 h-4 text-blue-500 mx-auto col-span-3"></div>'; wrapper.classList.remove('hidden');
             try {
                 const snaps = await getDocs(query(collection(db, 'workspaces', WORKSPACE, 'attachments'), where('ticketId', '==', ticketId)));
                 container.innerHTML = '';
                 if (snaps.empty) return wrapper.classList.add('hidden');
-                snaps.forEach(doc => { container.innerHTML += `<a href="${doc.data().downloadUrl}" target="_blank" class="block aspect-square rounded-lg border overflow-hidden"><img src="${doc.data().downloadUrl}" class="w-full h-full object-cover"></a>`; });
-            } catch (e) { console.error(e); container.innerHTML = '<p class="text-xs text-red-500">載入失敗</p>'; }
+                snaps.forEach(doc => container.innerHTML += `<a href="${doc.data().downloadUrl}" target="_blank" class="block aspect-square rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:opacity-80 transition-opacity"><img src="${doc.data().downloadUrl}" class="w-full h-full object-cover"></a>`);
+            } catch (e) { container.innerHTML = '<p class="text-xs text-red-500">載入失敗</p>'; }
         }
 
         async function loadTimeline(ticketId) {
@@ -1374,60 +1226,48 @@
                     const events = []; snaps.forEach(doc => events.push(doc.data()));
                     const statusProgress = { 'submitted':1, 'assigned':2, 'in_progress':3, 'contractor_review':4, 'samsung_review':5, 'closed':6, 'cancelled':-1 };
                     const currentLevel = statusProgress[currentTicketData.status] || 0;
-                    const flowSteps = [
-                        { action: 'created', label: '建立報修' }, { action: 'assigned', label: '卡爾吉特派工' },
-                        { action: 'arrived', label: '維修人員到場' }, { action: 'completed', label: '提交完工' },
-                        { action: 'calgit_approved', label: '卡爾吉特檢查通過' }, { action: 'samsung_approved', label: '三星驗收結案' }
-                    ];
+                    const flowSteps = [ { action: 'created', label: '建立報修' }, { action: 'assigned', label: '卡爾吉特派工' }, { action: 'arrived', label: '維修人員到場' }, { action: 'completed', label: '提交完工' }, { action: 'calgit_approved', label: '卡爾吉特通過' }, { action: 'samsung_approved', label: '三星驗收結案' } ];
 
                     container.innerHTML = '';
-                    if (currentTicketData.status === 'cancelled') return container.innerHTML = '<div class="text-red-500 text-sm font-bold px-2">此案件已取消</div>';
+                    if (currentTicketData.status === 'cancelled') return container.innerHTML = '<div class="text-red-500 text-sm font-bold px-2 py-4"><i class="fas fa-ban mr-2"></i>此案件已取消</div>';
 
                     flowSteps.forEach((step, index) => {
                         const matchingEvents = events.filter(e => e.action === step.action);
-                        const isCompleted = index < currentLevel;
-                        const isNextLineCompleted = (index + 1) < currentLevel;
+                        const isCompleted = index < currentLevel; const isNextLineCompleted = (index + 1) < currentLevel;
                         
-                        let html = `
-                            <div class="relative pl-8 py-2 group">
-                                ${index < flowSteps.length - 1 ? `<div class="absolute left-[11px] top-6 bottom-[-8px] w-0.5 ${isNextLineCompleted ? 'bg-blue-600' : 'bg-gray-200'} z-0"></div>` : ''}
-                                <div class="absolute left-[5px] top-3.5 w-3.5 h-3.5 rounded-full border-2 ${isCompleted ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-300'} z-10"></div>
+                        let html = `<div class="relative pl-8 py-2.5 group">
+                                ${index < flowSteps.length - 1 ? `<div class="absolute left-[5.5px] top-7 bottom-[-10px] w-[2px] ${isNextLineCompleted ? 'bg-blue-600' : 'bg-gray-200'} z-0"></div>` : ''}
+                                <div class="absolute left-[0px] top-4 w-3.5 h-3.5 rounded-full border-2 ${isCompleted ? 'bg-blue-600 border-blue-600 shadow-sm' : 'bg-white border-gray-300'} z-10 transition-colors"></div>
                                 <div class="flex flex-col">
-                                    <div class="text-sm font-bold ${isCompleted ? 'text-gray-900' : 'text-gray-400'}">${step.label}</div>
-                        `;
+                                    <div class="text-sm font-bold ${isCompleted ? 'text-gray-800' : 'text-gray-400'}">${step.label}</div>`;
                         matchingEvents.forEach(evt => {
-                            let evtTime = '處理中';
-                            if(evt.serverTime && typeof evt.serverTime.toDate === 'function') evtTime = evt.serverTime.toDate().toLocaleString('zh-TW');
-                            html += `<div class="text-xs text-gray-500 mt-0.5">${evtTime}</div>`;
-                            if (evt.note) html += `<div class="mt-1 text-xs text-gray-700 bg-gray-50 p-2 rounded border">${evt.note}</div>`;
+                            let evtTime = evt.serverTime?.toDate ? evt.serverTime.toDate().toLocaleString('zh-TW') : '處理中';
+                            html += `<div class="text-[11px] text-gray-500 mt-1 font-medium">${evtTime}</div>`;
+                            if (evt.note) html += `<div class="mt-2 text-xs text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200 leading-relaxed shadow-sm">${evt.note}</div>`;
                         });
-                        
-                        if (index === 2) events.filter(e => e.action === 'pause_requested').forEach(evt => html += `<div class="mt-2 text-xs text-orange-700 bg-orange-50 p-2 rounded border border-orange-200"><i class="fas fa-pause-circle mr-1"></i>暫停/待料<br>${evt.note}</div>`);
-                        if (index === 3) events.filter(e => e.action === 'contractor_rejected').forEach(evt => html += `<div class="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200"><i class="fas fa-times-circle mr-1"></i>卡爾吉特退回<br>${evt.note}</div>`);
-                        if (index === 4) events.filter(e => e.action === 'samsung_rejected').forEach(evt => html += `<div class="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200"><i class="fas fa-times-circle mr-1"></i>三星退回<br>${evt.note}</div>`);
-
+                        if (index === 2) events.filter(e => e.action === 'pause_requested').forEach(evt => html += `<div class="mt-2 text-xs text-orange-700 bg-orange-50 p-3 rounded-lg border border-orange-200 shadow-sm"><i class="fas fa-pause-circle mr-1"></i>暫停/待料<br>${evt.note}</div>`);
+                        if (index === 3) events.filter(e => e.action === 'contractor_rejected').forEach(evt => html += `<div class="mt-2 text-xs text-red-600 bg-red-50 p-3 rounded-lg border border-red-200 shadow-sm"><i class="fas fa-times-circle mr-1"></i>卡爾吉特退回<br>${evt.note}</div>`);
+                        if (index === 4) events.filter(e => e.action === 'samsung_rejected').forEach(evt => html += `<div class="mt-2 text-xs text-red-600 bg-red-50 p-3 rounded-lg border border-red-200 shadow-sm"><i class="fas fa-times-circle mr-1"></i>三星退回<br>${evt.note}</div>`);
                         html += `</div></div>`; container.innerHTML += html;
                     });
                 });
-            } catch(e) { console.error(e); }
+            } catch(e) {}
         }
 
         function renderTicketActions(ticket) {
-            const area = document.getElementById('td-actions-area');
-            const container = document.getElementById('td-dynamic-actions');
-            container.innerHTML = ''; area.classList.add('hidden');
-            const s = ticket.status;
+            const area = document.getElementById('td-actions-area'); const container = document.getElementById('td-dynamic-actions');
+            container.innerHTML = ''; area.classList.add('hidden'); const s = ticket.status;
 
             if (userRole === 'worker' && ticket.assignedUids.includes(currentUser.uid)) {
-                if (s === 'assigned') { area.classList.remove('hidden'); container.innerHTML = `<button onclick="updateTicketStatus('in_progress', 'arrived', '人員已到場')" class="w-full bg-blue-600 text-white rounded py-3 font-bold">回報到場</button>`; } 
-                else if (s === 'in_progress') { area.classList.remove('hidden'); container.innerHTML = `<button onclick="promptCompleteTicket()" class="w-full bg-green-600 text-white rounded py-3 font-bold mb-2">提交完工 (照片)</button><button onclick="promptPause()" class="w-full bg-orange-50 text-orange-700 border border-orange-200 rounded py-2 font-bold">暫停/待料</button>`; }
+                if (s === 'assigned') { area.classList.remove('hidden'); container.innerHTML = `<button onclick="updateTicketStatus('in_progress', 'arrived', '人員已到場')" class="btn-press w-full bg-blue-600 text-white rounded-xl py-3.5 font-bold shadow-md">回報抵達現場</button>`; } 
+                else if (s === 'in_progress') { area.classList.remove('hidden'); container.innerHTML = `<button onclick="promptCompleteTicket()" class="btn-press w-full bg-green-600 text-white rounded-xl py-3.5 font-bold mb-3 shadow-md">提交完工紀錄</button><button onclick="promptPause()" class="btn-press w-full bg-orange-50 text-orange-700 border border-orange-200 rounded-xl py-3 font-bold">回報暫停 / 待料</button>`; }
             }
             if (userRole === 'calgit' || userRole === 'admin') {
-                if (s === 'submitted') { area.classList.remove('hidden'); container.innerHTML = `<button onclick="promptAssign()" class="w-full bg-orange-500 text-white rounded py-3 font-bold">指派人員</button>`; } 
-                else if (s === 'contractor_review') { area.classList.remove('hidden'); container.innerHTML = `<div class="flex gap-2"><button onclick="updateTicketStatus('samsung_review', 'calgit_approved', '通過')" class="flex-1 bg-green-600 text-white rounded py-3 font-bold">通過送三星</button><button onclick="promptReject('contractor_rejected')" class="flex-1 bg-red-100 text-red-600 rounded py-3 font-bold">退回</button></div>`; }
+                if (s === 'submitted') { area.classList.remove('hidden'); container.innerHTML = `<button onclick="promptAssign()" class="btn-press w-full bg-orange-500 text-white rounded-xl py-3.5 font-bold shadow-md">指派現場維護人員</button>`; } 
+                else if (s === 'contractor_review') { area.classList.remove('hidden'); container.innerHTML = `<div class="flex gap-3"><button onclick="updateTicketStatus('samsung_review', 'calgit_approved', '檢查通過')" class="btn-press flex-1 bg-green-600 text-white rounded-xl py-3.5 font-bold shadow-md">通過送三星</button><button onclick="promptReject('contractor_rejected')" class="btn-press flex-1 bg-red-100 text-red-700 rounded-xl py-3.5 font-bold border border-red-200">退回工班</button></div>`; }
             }
             if (userRole === 'samsung' || userRole === 'admin') {
-                if (s === 'samsung_review') { area.classList.remove('hidden'); container.innerHTML = `<div class="flex gap-2"><button onclick="updateTicketStatus('closed', 'samsung_approved', '結案')" class="flex-1 bg-indigo-600 text-white rounded py-3 font-bold">同意結案</button><button onclick="promptReject('samsung_rejected')" class="flex-1 bg-red-100 text-red-600 rounded py-3 font-bold">退回</button></div>`; }
+                if (s === 'samsung_review') { area.classList.remove('hidden'); container.innerHTML = `<div class="flex gap-3"><button onclick="updateTicketStatus('closed', 'samsung_approved', '同意結案')" class="btn-press flex-1 bg-indigo-600 text-white rounded-xl py-3.5 font-bold shadow-md">同意結案</button><button onclick="promptReject('samsung_rejected')" class="btn-press flex-1 bg-red-100 text-red-700 rounded-xl py-3.5 font-bold border border-red-200">退回</button></div>`; }
             }
         }
 
@@ -1437,7 +1277,7 @@
                 await updateDoc(doc(db, 'workspaces', WORKSPACE, 'tickets', currentTicketId), { status: newStatus, updatedAt: serverTimestamp() });
                 await addDoc(collection(db, 'workspaces', WORKSPACE, 'tickets', currentTicketId, 'events'), { action: actionName, actorUid: currentUser.uid, note, serverTime: serverTimestamp() });
                 showToast('狀態更新成功', 'success');
-            } catch (e) { console.error(e); showToast('更新失敗', 'error'); }
+            } catch (e) { showToast('更新失敗', 'error'); }
             showLoader(false);
         };
 
@@ -1447,12 +1287,12 @@
             try {
                 const snaps = await getDocs(query(collection(db, 'workspaces', WORKSPACE, 'members'), where('role', '==', 'worker'), where('active', '==', true)));
                 select.innerHTML = '<option value="">-- 請選擇現場工班 --</option>';
-                if (snaps.empty) return select.innerHTML = '<option value="">無工班人員，請至後台開通</option>';
+                if (snaps.empty) return select.innerHTML = '<option value="">無可用工班，請至後台開通</option>';
                 snaps.forEach(doc => select.innerHTML += `<option value="${doc.id}">${doc.data().email}</option>`);
-            } catch(e) { console.error(e); select.innerHTML = '<option value="">讀取失敗</option>'; }
+            } catch(e) { select.innerHTML = '<option value="">讀取失敗</option>'; }
         };
 
-        document.getElementById('btn-submit-assign').addEventListener('click', async () => {
+        document.getElementById('btn-submit-assign')?.addEventListener('click', async () => {
             const workerUid = document.getElementById('ma-worker-select').value;
             if (!workerUid) return showToast('請選擇派工對象', 'error');
             showLoader(true);
@@ -1460,98 +1300,77 @@
                 await updateDoc(doc(db, 'workspaces', WORKSPACE, 'tickets', currentTicketId), { status: 'assigned', assignedUids: [workerUid], updatedAt: serverTimestamp() });
                 await addDoc(collection(db, 'workspaces', WORKSPACE, 'tickets', currentTicketId, 'events'), { action: 'assigned', actorUid: currentUser.uid, note: "已指派現場維護人員", serverTime: serverTimestamp() });
                 closeModal('modal-assign'); showToast('派工成功！', 'success');
-            } catch(e) { console.error(e); showToast('失敗', 'error'); }
+            } catch(e) { showToast('失敗', 'error'); }
             showLoader(false);
         });
 
         window.promptPause = function() { document.getElementById('mp-reason').value = ''; document.getElementById('modal-pause').classList.remove('hidden'); };
-        document.getElementById('btn-submit-pause').addEventListener('click', async () => {
+        document.getElementById('btn-submit-pause')?.addEventListener('click', async () => {
             const note = document.getElementById('mp-reason').value.trim(); if (!note) return;
             showLoader(true);
             try { await addDoc(collection(db, 'workspaces', WORKSPACE, 'tickets', currentTicketId, 'events'), { action: 'pause_requested', actorUid: currentUser.uid, note: `[${document.getElementById('mp-reason-type').value}] ${note}`, serverTime: serverTimestamp() }); closeModal('modal-pause'); showToast('回報成功', 'success'); } 
-            catch (err) { console.error(err); showToast('失敗', 'error'); }
+            catch (err) { showToast('失敗', 'error'); }
             showLoader(false);
         });
 
         window.promptCompleteTicket = function() { document.getElementById('mc-note').value = ''; document.getElementById('mc-photos').value = ''; document.getElementById('mc-photo-preview').innerHTML = ''; document.getElementById('modal-complete').classList.remove('hidden'); };
-        document.getElementById('mc-photos').addEventListener('change', (e) => {
+        document.getElementById('mc-photos')?.addEventListener('change', (e) => {
             const files = Array.from(e.target.files).slice(0,10); const c = document.getElementById('mc-photo-preview'); c.innerHTML = '';
-            files.forEach(f => c.innerHTML += `<div class="relative w-16 h-16 rounded overflow-hidden border"><img src="${URL.createObjectURL(f)}" class="w-full h-full object-cover"></div>`);
+            files.forEach(f => c.innerHTML += `<div class="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 shadow-sm"><img src="${URL.createObjectURL(f)}" class="w-full h-full object-cover"></div>`);
         });
-        document.getElementById('btn-submit-completion').addEventListener('click', async () => {
+        document.getElementById('btn-submit-completion')?.addEventListener('click', async () => {
             const note = document.getElementById('mc-note').value.trim(); const files = document.getElementById('mc-photos').files;
-            if (!note || files.length===0) return showToast('請填說明並上傳照片', 'error');
+            if (!note || files.length===0) return showToast('請填寫說明並至少上傳 1 張照片', 'error');
             showLoader(true);
             try {
                 for (let i = 0; i < files.length; i++) {
-                    const blob = await compressImage(files[i]);
-                    const sRef = ref(storage, `workspaces/${WORKSPACE}/tickets/${currentTicketId}/completion_${Date.now()}_${i}.jpg`);
+                    const blob = await compressImage(files[i]); const sRef = ref(storage, `workspaces/${WORKSPACE}/tickets/${currentTicketId}/completion_${Date.now()}_${i}.jpg`);
                     await uploadBytesResumable(sRef, blob);
                     await addDoc(collection(db, 'workspaces', WORKSPACE, 'attachments'), { ticketId: currentTicketId, storagePath: sRef.fullPath, downloadUrl: await getDownloadURL(sRef), uploadedBy: currentUser.uid, stage: 'completed', createdAt: serverTimestamp() });
                 }
                 await updateDoc(doc(db, 'workspaces', WORKSPACE, 'tickets', currentTicketId), { status: 'contractor_review', updatedAt: serverTimestamp() });
                 await addDoc(collection(db, 'workspaces', WORKSPACE, 'tickets', currentTicketId, 'events'), { action: 'completed', actorUid: currentUser.uid, note, serverTime: serverTimestamp() });
-                closeModal('modal-complete'); showToast('已送出！', 'success');
-            } catch (err) { console.error(err); showToast('失敗', 'error'); }
+                closeModal('modal-complete'); showToast('完工紀錄已送出！', 'success');
+            } catch (err) { showToast('提交失敗', 'error'); }
             showLoader(false);
         });
 
         let currentRejectAction = null;
         window.promptReject = function(actionType) { currentRejectAction = actionType; document.getElementById('mr-reason').value = ''; document.getElementById('modal-reject').classList.remove('hidden'); };
-        document.getElementById('btn-submit-reject').addEventListener('click', async () => {
+        document.getElementById('btn-submit-reject')?.addEventListener('click', async () => {
             const reason = document.getElementById('mr-reason').value.trim(); if (!reason) return;
             closeModal('modal-reject'); await updateTicketStatus('in_progress', currentRejectAction, reason);
         });
 
         async function loadStoresCache() {
             try {
-                const q = query(collection(db, 'workspaces', WORKSPACE, 'stores'), where('active', '==', true));
-                onSnapshot(q, (snapshot) => {
-                    storesCache = [];
-                    snapshot.forEach(doc => storesCache.push({ id: doc.id, ...doc.data() }));
-                    if (currentView === 'new-ticket') {
-                        const type = document.getElementById('nt-channel').value;
-                        if(type) renderStoreDropdown(type);
-                    }
-                }, (err) => console.warn(err));
+                onSnapshot(query(collection(db, 'workspaces', WORKSPACE, 'stores'), where('active', '==', true)), (snapshot) => {
+                    storesCache = []; snapshot.forEach(doc => storesCache.push({ id: doc.id, ...doc.data() }));
+                    if (currentView === 'new-ticket') { const type = document.getElementById('nt-channel').value; if(type) renderStoreDropdown(type); }
+                }, () => {});
             } catch (e) {}
         }
 
-        document.getElementById('form-new-store').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if(userRole !== 'admin' && userRole !== 'calgit') return showToast('無權限', 'error');
-            const data = {
-                storeCode: document.getElementById('as-code').value.trim().toUpperCase(),
-                channelType: document.getElementById('as-type').value,
-                storeName: document.getElementById('as-name').value.trim(),
-                region: document.getElementById('as-region').value.trim(),
-                address: document.getElementById('as-address').value.trim(),
-                active: true, createdAt: serverTimestamp(), createdBy: currentUser.uid, revision: 1
-            };
+        document.getElementById('form-new-store')?.addEventListener('submit', async (e) => {
+            e.preventDefault(); if(userRole !== 'admin' && userRole !== 'calgit') return showToast('無權限', 'error');
+            const data = { storeCode: document.getElementById('as-code').value.trim().toUpperCase(), channelType: document.getElementById('as-type').value, storeName: document.getElementById('as-name').value.trim(), region: document.getElementById('as-region').value.trim(), address: document.getElementById('as-address').value.trim(), active: true, createdAt: serverTimestamp(), createdBy: currentUser.uid };
             showLoader(true);
-            try { await addDoc(collection(db, 'workspaces', WORKSPACE, 'stores'), data); showToast('店家新增成功', 'success'); e.target.reset(); } 
-            catch(err) { console.error(err); showToast('新增失敗', 'error'); }
+            try { await addDoc(collection(db, 'workspaces', WORKSPACE, 'stores'), data); showToast('店家新增成功', 'success'); e.target.reset(); } catch(err) { showToast('新增失敗', 'error'); }
             showLoader(false);
         });
 
         function loadAdminStores() {
-            const list = document.getElementById('admin-stores-list');
+            const list = document.getElementById('admin-stores-list'); if(!list) return;
             list.innerHTML = '<div class="text-center py-4"><div class="spinner inline-block"></div></div>';
-            const q = query(collection(db, 'workspaces', WORKSPACE, 'stores'), orderBy('createdAt', 'desc'));
-            onSnapshot(q, (snapshot) => {
+            onSnapshot(query(collection(db, 'workspaces', WORKSPACE, 'stores'), orderBy('createdAt', 'desc')), (snapshot) => {
                 list.innerHTML = '';
-                if (snapshot.empty) return list.innerHTML = '<p class="text-sm text-gray-500">尚無店家</p>';
+                if (snapshot.empty) return list.innerHTML = '<div class="text-center text-gray-500 py-6"><i class="fas fa-store-slash text-3xl mb-2 text-gray-300"></i><p class="text-sm font-medium">尚無店家資料</p></div>';
                 snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const div = document.createElement('div');
-                    div.className = `p-3 rounded border ${data.active ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-200 opacity-60'}`;
-                    div.innerHTML = `
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <div class="font-bold text-sm text-gray-800">[${data.channelType}] ${data.storeCode} - ${data.storeName}</div>
-                                <div class="text-xs text-gray-500">${data.region} ${data.address}</div>
-                            </div>
-                            <button class="text-xs px-2 py-1 rounded border ${data.active ? 'text-red-600 border-red-200 bg-red-50' : 'text-green-600 border-green-200 bg-green-50'}" onclick="toggleStoreStatus('${doc.id}', ${data.active})">${data.active ? '停用' : '啟用'}</button>
+                    const data = doc.data(); const div = document.createElement('div');
+                    div.className = `p-4 rounded-xl border shadow-sm ${data.active ? 'bg-white border-gray-100' : 'bg-gray-50 border-gray-200 opacity-70'}`;
+                    div.innerHTML = `<div class="flex justify-between items-start">
+                            <div><div class="font-bold text-sm text-gray-800">[${data.channelType}] ${data.storeCode} - ${data.storeName}</div><div class="text-xs text-gray-500 mt-1">${data.region} ${data.address}</div></div>
+                            <button class="btn-press text-xs px-3 py-1.5 rounded-lg font-bold border shadow-sm transition-colors ${data.active ? 'text-red-600 border-red-200 bg-red-50 hover:bg-red-100' : 'text-green-600 border-green-200 bg-green-50 hover:bg-green-100'}" onclick="toggleStoreStatus('${doc.id}', ${data.active})">${data.active ? '停用' : '啟用'}</button>
                         </div>`;
                     list.appendChild(div);
                 });
@@ -1560,65 +1379,22 @@
 
         window.toggleStoreStatus = async function(id, currentActive) {
             if(userRole !== 'admin' && userRole !== 'calgit') return;
-            try {
-                await updateDoc(doc(db, 'workspaces', WORKSPACE, 'stores', id), { active: !currentActive, updatedAt: serverTimestamp(), updatedBy: currentUser.uid });
-                showToast(`已${!currentActive ? '啟用' : '停用'}店家`, 'success');
-            } catch(e) { console.error(e); showToast('操作失敗', 'error'); }
+            try { await updateDoc(doc(db, 'workspaces', WORKSPACE, 'stores', id), { active: !currentActive }); showToast(`已${!currentActive ? '啟用' : '停用'}店家`, 'success'); } 
+            catch(e) { showToast('操作失敗', 'error'); }
         };
-
-        document.getElementById('btn-upload-stores').addEventListener('click', async () => {
-            if(userRole !== 'admin' && userRole !== 'calgit') return showToast('無權限', 'error');
-            const files = document.getElementById('as-bulk-files').files;
-            if (files.length === 0) return showToast('請先選檔案', 'error');
-            const statusDiv = document.getElementById('bulk-upload-status');
-            statusDiv.innerHTML = '<div class="font-bold text-gray-700 mb-1">處理進度：</div>';
-            statusDiv.classList.remove('hidden');
-            showLoader(true);
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const sl = document.createElement('div'); sl.textContent = `⏳ ${file.name} (上傳中...)`; statusDiv.appendChild(sl);
-                try {
-                    const sRef = ref(storage, `workspaces/${WORKSPACE}/store_imports/${Date.now()}_${file.name}`);
-                    await uploadBytesResumable(sRef, file);
-                    sl.textContent = `✅ 已備份至雲端: ${file.name}`; sl.className = 'text-green-600';
-                    
-                    if (file.name.toLowerCase().endsWith('.csv')) {
-                        sl.textContent = `🔄 解析並導入中...`; sl.className = 'text-blue-600';
-                        const text = await file.text();
-                        const rows = text.split(/\r?\n/).map(row => row.split(','));
-                        let importedCount = 0;
-                        for (let j = 1; j < rows.length; j++) {
-                            const cols = rows[j];
-                            if (cols.length >= 5) {
-                                const c = cols[0].replace(/['"]/g, '').trim().toUpperCase();
-                                const t = cols[1].replace(/['"]/g, '').trim().toUpperCase();
-                                const n = cols[2].replace(/['"]/g, '').trim();
-                                if (c && (t === 'SES' || t === 'STS') && n) {
-                                    await addDoc(collection(db, 'workspaces', WORKSPACE, 'stores'), { storeCode: c, channelType: t, storeName: n, region: cols[3].replace(/['"]/g, '').trim(), address: cols[4].replace(/['"]/g, '').trim(), active: true, createdAt: serverTimestamp(), createdBy: currentUser.uid, revision: 1 });
-                                    importedCount++;
-                                }
-                            }
-                        }
-                        sl.textContent = `✅ ${file.name} 成功導入 ${importedCount} 筆店家。`; sl.className = 'text-green-600 font-medium';
-                    }
-                } catch (e) { console.error(e); sl.textContent = `❌ 失敗 (${e.message})`; sl.className = 'text-red-600'; }
-            }
-            showLoader(false);
-            document.getElementById('as-bulk-files').value = '';
-        });
 
         let memberFilter = 'all';
         document.querySelectorAll('.member-filter-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.member-filter-btn').forEach(b => { b.classList.replace('bg-blue-100', 'bg-gray-100'); b.classList.replace('text-blue-700', 'text-gray-600'); });
-                e.target.classList.replace('bg-gray-100', 'bg-blue-100'); e.target.classList.replace('text-gray-600', 'text-blue-700');
-                memberFilter = e.target.dataset.filter; loadAdminMembers();
+                e.currentTarget.classList.replace('bg-gray-100', 'bg-blue-100'); e.currentTarget.classList.replace('text-gray-600', 'text-blue-700');
+                memberFilter = e.currentTarget.dataset.filter; loadAdminMembers();
             });
         });
 
         function loadAdminMembers() {
             if(userRole !== 'admin') return;
-            const list = document.getElementById('admin-members-list');
+            const list = document.getElementById('admin-members-list'); if(!list) return;
             list.innerHTML = '<div class="text-center py-4"><div class="spinner inline-block"></div></div>';
             onSnapshot(query(collection(db, 'workspaces', WORKSPACE, 'members')), (snapshot) => {
                 list.innerHTML = ''; let members = [];
@@ -1626,43 +1402,41 @@
                 members.sort((a, b) => { if (a.active !== b.active) return a.active ? 1 : -1; return (a.email || '').localeCompare(b.email || ''); });
                 if(memberFilter === 'pending') members = members.filter(m => !m.active || !m.role);
                 if(memberFilter === 'active') members = members.filter(m => m.active && m.role);
-                if (members.length === 0) return list.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">無資料</p>';
+                if (members.length === 0) return list.innerHTML = '<div class="text-center text-gray-500 py-6"><i class="fas fa-users-slash text-3xl mb-2 text-gray-300"></i><p class="text-sm font-medium">無符合資料</p></div>';
                 
                 members.forEach(m => {
                     const isSelf = (m.uid === currentUser.uid);
                     list.innerHTML += `
-                        <div class="p-4 rounded-xl border shadow-sm ${m.active ? 'bg-white' : 'bg-gray-50 border-orange-200'}">
-                            <div class="flex justify-between items-start mb-3">
-                                <div><div class="font-bold text-sm">${m.email}</div><div class="text-xs text-gray-500 font-mono mt-1">UID: ${m.uid.substring(0,8)}...</div></div>
-                                <span class="px-2 py-1 rounded text-xs font-bold ${m.active ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}">${m.active ? '已啟用' : '停用/待審'}</span>
+                        <div class="p-5 rounded-2xl shadow-sm border ${m.active ? 'bg-white border-gray-100' : 'bg-gray-50 border-orange-200'}">
+                            <div class="flex justify-between items-start mb-4">
+                                <div><div class="font-bold text-sm text-gray-800">${m.email}</div><div class="text-[10px] text-gray-400 font-mono mt-1 tracking-wide">UID: ${m.uid.substring(0,8)}...</div></div>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold border ${m.active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-orange-50 text-orange-700 border-orange-200'}">${m.active ? '已啟用' : '停用/待審'}</span>
                             </div>
-                            <div class="flex items-center gap-2 mb-2">
-                                <label class="text-xs text-gray-500 w-12">角色</label>
-                                <select id="role-sel-${m.uid}" class="flex-1 border border-gray-300 rounded px-2 py-1.5 text-sm" ${isSelf ? 'disabled' : ''}>
-                                    <option value="" ${!m.role ? 'selected' : ''}>-- 選擇 --</option>
-                                    <option value="admin" ${m.role === 'admin' ? 'selected' : ''}>最高管理員</option>
-                                    <option value="samsung" ${m.role === 'samsung' ? 'selected' : ''}>三星人員</option>
-                                    <option value="calgit" ${m.role === 'calgit' ? 'selected' : ''}>卡爾吉特</option>
-                                    <option value="worker" ${m.role === 'worker' ? 'selected' : ''}>現場工班</option>
+                            <div class="flex items-center gap-3 mb-3">
+                                <label class="text-xs font-bold text-gray-500 w-10">角色</label>
+                                <select id="role-sel-${m.uid}" class="flex-1 border border-gray-300 rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 focus:bg-white" ${isSelf ? 'disabled' : ''}>
+                                    <option value="" ${!m.role ? 'selected' : ''}>-- 選擇角色 --</option>
+                                    <option value="admin" ${m.role === 'admin' ? 'selected' : ''}>最高管理員</option><option value="samsung" ${m.role === 'samsung' ? 'selected' : ''}>三星人員</option>
+                                    <option value="calgit" ${m.role === 'calgit' ? 'selected' : ''}>卡爾吉特</option><option value="worker" ${m.role === 'worker' ? 'selected' : ''}>現場工班</option>
                                 </select>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <label class="text-xs text-gray-500 w-12">狀態</label>
-                                <select id="status-sel-${m.uid}" class="flex-1 border border-gray-300 rounded px-2 py-1.5 text-sm" ${isSelf ? 'disabled' : ''}>
-                                    <option value="true" ${m.active ? 'selected' : ''}>啟用</option><option value="false" ${!m.active ? 'selected' : ''}>停權</option>
+                            <div class="flex items-center gap-3">
+                                <label class="text-xs font-bold text-gray-500 w-10">狀態</label>
+                                <select id="status-sel-${m.uid}" class="flex-1 border border-gray-300 rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 focus:bg-white" ${isSelf ? 'disabled' : ''}>
+                                    <option value="true" ${m.active ? 'selected' : ''}>帳號啟用</option><option value="false" ${!m.active ? 'selected' : ''}>帳號停權</option>
                                 </select>
                             </div>
-                            ${!isSelf ? `<button onclick="updateMemberInfo('${m.uid}')" class="w-full mt-3 bg-gray-800 text-white rounded py-2 text-sm font-medium shadow-sm active:bg-gray-900">儲存權限設定</button>` : ''}
+                            ${!isSelf ? `<button onclick="updateMemberInfo('${m.uid}')" class="btn-press w-full mt-4 bg-gray-800 text-white rounded-xl py-2.5 text-sm font-bold shadow-md hover:bg-gray-900">儲存權限設定</button>` : ''}
                         </div>`;
                 });
             });
         }
         window.updateMemberInfo = async function(uid) {
             const role = document.getElementById(`role-sel-${uid}`).value, active = document.getElementById(`status-sel-${uid}`).value === 'true';
-            if (!role && active) return showToast('啟用前必須指派角色', 'error');
+            if (!role && active) return showToast('啟用帳號前必須指派角色', 'error');
             showLoader(true);
-            try { await updateDoc(doc(db, 'workspaces', WORKSPACE, 'members', uid), { role: role || null, active, capabilities: role === 'admin' ? ['storeAdmin'] : [], updatedAt: serverTimestamp() }); showToast('更新成功', 'success'); } 
-            catch(e) { console.error(e); showToast('失敗', 'error'); }
+            try { await updateDoc(doc(db, 'workspaces', WORKSPACE, 'members', uid), { role: role || null, active, capabilities: role === 'admin' ? ['storeAdmin'] : [] }); showToast('權限更新成功', 'success'); } 
+            catch(e) { showToast('失敗', 'error'); }
             showLoader(false);
         };
     </script>
