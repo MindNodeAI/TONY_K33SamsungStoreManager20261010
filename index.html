@@ -188,7 +188,10 @@
                         <input type="email" id="login-email" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="輸入Email">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">密碼</label>
+                        <div class="flex justify-between items-end mb-1">
+                            <label class="block text-sm font-medium text-gray-700">密碼</label>
+                            <button type="button" id="btn-forgot-password" class="text-xs text-blue-600 hover:text-blue-800 font-medium active:text-blue-900">忘記密碼？</button>
+                        </div>
                         <div class="relative w-full">
                             <input type="password" id="login-password" class="w-full border border-gray-300 rounded-lg px-4 py-2 pr-10 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="輸入密碼">
                             <button type="button" id="btn-toggle-password" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700 focus:outline-none">
@@ -196,7 +199,10 @@
                             </button>
                         </div>
                     </div>
-                    <button id="btn-login-email" class="w-full bg-blue-600 text-white rounded-lg py-3 font-semibold shadow-md active:bg-blue-700">登入 / 註冊</button>
+                    <div class="flex gap-3">
+                        <button id="btn-login-email" class="flex-1 bg-blue-600 text-white rounded-lg py-3 font-semibold shadow-md active:bg-blue-700">登入</button>
+                        <button id="btn-register-email" class="flex-1 bg-green-600 text-white rounded-lg py-3 font-semibold shadow-md active:bg-green-700">註冊帳號</button>
+                    </div>
                     <div class="relative flex py-2 items-center">
                         <div class="flex-grow border-t border-gray-300"></div>
                         <span class="flex-shrink-0 mx-4 text-gray-400 text-sm">或</span>
@@ -535,7 +541,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, onSnapshot, addDoc, getDocs, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
@@ -699,16 +705,43 @@
             else { pwdInput.type = 'password'; icon.classList.replace('fa-eye'); }
         });
 
+        // 獨立的「登入」邏輯
         document.getElementById('btn-login-email').addEventListener('click', async () => {
             const email = document.getElementById('login-email').value.trim();
             const pwd = document.getElementById('login-password').value;
             if(!email || !pwd) return showToast('請填寫Email與密碼', 'error');
             showLoader(true);
-            try { await signInWithEmailAndPassword(auth, email, pwd); } catch (err) {
-                if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-                    try { await createUserWithEmailAndPassword(auth, email, pwd); showToast('註冊成功！', 'success'); } 
-                    catch (regErr) { showToast('登入失敗: ' + regErr.message, 'error'); }
-                } else { showToast('登入失敗: ' + err.message, 'error'); }
+            try { 
+                await signInWithEmailAndPassword(auth, email, pwd); 
+            } catch (err) {
+                if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
+                    showToast('登入失敗: 密碼錯誤。若您當初是使用 Google 建立帳號，請直接點擊最下方的 Google 按鈕！', 'error');
+                } else if (err.code === 'auth/user-not-found') {
+                    showToast('登入失敗: 找不到此帳號，請先點擊右側的註冊按鈕', 'error');
+                } else {
+                    showToast('登入失敗: ' + err.message, 'error');
+                }
+            }
+            showLoader(false);
+        });
+
+        // 獨立的「註冊」邏輯
+        document.getElementById('btn-register-email').addEventListener('click', async () => {
+            const email = document.getElementById('login-email').value.trim();
+            const pwd = document.getElementById('login-password').value;
+            if(!email || !pwd) return showToast('請填寫Email與密碼', 'error');
+            if(pwd.length < 6) return showToast('密碼長度至少需要 6 個字元', 'error');
+            
+            showLoader(true);
+            try {
+                await createUserWithEmailAndPassword(auth, email, pwd);
+                showToast('註冊成功！請等待管理員開通權限。', 'success');
+            } catch (err) {
+                if (err.code === 'auth/email-already-in-use') {
+                    showToast('註冊失敗: 此 Email 已經被註冊過囉！', 'error');
+                } else {
+                    showToast('註冊失敗: ' + err.message, 'error');
+                }
             }
             showLoader(false);
         });
@@ -720,25 +753,25 @@
             showLoader(false);
         });
         
-        document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
-        document.getElementById('btn-logout-pending').addEventListener('click', () => signOut(auth));
-
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.filter-btn').forEach(b => { b.classList.replace('bg-blue-100', 'bg-gray-100'); b.classList.replace('text-blue-700', 'text-gray-600'); });
-                const targetBtn = e.target.closest('button');
-                targetBtn.classList.replace('bg-gray-100', 'bg-blue-100');
-                targetBtn.classList.replace('text-gray-600', 'text-blue-700');
-                filters.status = targetBtn.dataset.filter;
-                renderTicketsList(); 
-            });
+        document.getElementById('btn-forgot-password').addEventListener('click', async () => {
+            const email = document.getElementById('login-email').value.trim();
+            if(!email) return showToast('請先填寫上方的 Email，系統才能寄送重設信！', 'error');
+            
+            showLoader(true);
+            try {
+                await sendPasswordResetEmail(auth, email);
+                showToast('密碼重設信已發送！請至您的信箱收信。', 'success');
+            } catch (err) {
+                if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+                    showToast('找不到此 Email 或尚未註冊密碼。', 'error');
+                } else {
+                    showToast('發送失敗: ' + err.message, 'error');
+                }
+            }
+            showLoader(false);
         });
 
-        document.getElementById('search-keyword').addEventListener('input', (e) => { filters.keyword = e.target.value.trim().toLowerCase(); renderTicketsList(); });
-        document.getElementById('search-category').addEventListener('change', (e) => { filters.category = e.target.value; renderTicketsList(); });
-        document.getElementById('btn-sort-time').addEventListener('click', () => {
-            filters.sort = filters.sort === 'desc' ? 'asc' : 'desc';
-            document.querySelector('#btn-sort-time i').className = filters.sort === 'desc' ? 'fas fa-sort-amount-down mr-1' : 'fas fa-sort-amount-up mr-1';
+        document.getElementById('btn-logout').addEventListener('click', () => {
             renderTicketsList();
         });
 
@@ -1013,7 +1046,13 @@
                             <p><strong>已結案：</strong> ${stats.closed} | <strong>處理中：</strong> ${stats.active} | <strong>待驗收：</strong> ${stats.review} | <strong>待派工：</strong> ${stats.pending}</p>
                             <h3>類別分佈</h3><ul>`;
                 for (let c in stats.categories) { html += `<li>${c}：${stats.categories[c]} 件</li>`; }
-                html += `</ul><p class="mt-4 text-xs text-red-500"><i class="fas fa-info-circle mr-1"></i>如需進階趨勢分析、圖表繪製與匯出 Word 功能，請於設定頁面輸入 Gemini API Key。</p>`;
+                html += `</ul>
+                         <div class="mt-6 bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
+                            <i class="fas fa-sparkles text-2xl text-purple-500 mb-2"></i>
+                            <h4 class="text-sm font-bold text-purple-800 mb-1">解鎖 AI 深度分析與圖表匯出</h4>
+                            <p class="text-xs text-purple-600 mb-3">只要輸入 Google Gemini API Key，系統就能為您自動繪製視覺化圖表、撰寫異常分析與營運建議，並支援一鍵打包為 Word 報告檔！</p>
+                            <a href="https://aistudio.google.com/app/apikey" target="_blank" class="inline-block bg-purple-600 text-white text-xs font-bold px-4 py-2 rounded shadow hover:bg-purple-700 transition-colors">前往免費取得 API Key</a>
+                         </div>`;
                 reportContent.innerHTML = html;
                 btnExcel.classList.remove('hidden');
                 return;
