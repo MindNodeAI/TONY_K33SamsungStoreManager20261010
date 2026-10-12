@@ -87,6 +87,29 @@
         </div>
     </div>
 
+    <!-- Modal: Edit Store -->
+    <div id="modal-edit-store" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h3 class="text-lg font-bold mb-4 text-gray-800"><i class="fas fa-edit text-blue-500 mr-2"></i>編輯店家資訊</h3>
+            <input type="hidden" id="es-id">
+            <div class="space-y-3 mb-5">
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="block text-xs font-bold text-gray-500 mb-1">代碼 *</label><input type="text" id="es-code" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm uppercase bg-gray-50 focus:bg-white outline-none" required></div>
+                    <div><label class="block text-xs font-bold text-gray-500 mb-1">類型 *</label><select id="es-type" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:bg-white outline-none"><option value="SES">SES</option><option value="STS">STS</option></select></div>
+                </div>
+                <div><label class="block text-xs font-bold text-gray-500 mb-1">名稱 *</label><input type="text" id="es-name" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:bg-white outline-none" required></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="block text-xs font-bold text-gray-500 mb-1">縣市 *</label><input type="text" id="es-region" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:bg-white outline-none" required></div>
+                    <div><label class="block text-xs font-bold text-gray-500 mb-1">地址 *</label><input type="text" id="es-address" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:bg-white outline-none" required></div>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeModal('modal-edit-store')" class="btn-press px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium">取消</button>
+                <button id="btn-submit-edit-store" class="btn-press px-5 py-2.5 bg-blue-600 text-white rounded-lg font-bold shadow">儲存修改</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal: Pause Ticket -->
     <div id="modal-pause" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
@@ -221,7 +244,7 @@
                 <div id="role-badge" class="text-xs bg-gray-800 text-white px-3 py-1.5 rounded-full font-bold shadow-sm"></div>
             </div>
             
-            <div class="flex gap-3 mb-5 overflow-x-auto pb-2 hide-scrollbar -mx-1 px-1">
+            <div class="flex gap-3 mb-5 overflow-x-auto pb-2 pt-2 px-1 hide-scrollbar -mx-1">
                 <button class="filter-btn btn-press mt-2 active bg-blue-100 text-blue-700 px-5 py-2 rounded-full text-sm font-semibold whitespace-nowrap" data-filter="all">全部</button>
                 <button class="filter-btn btn-press mt-2 bg-gray-100 text-gray-600 px-5 py-2 rounded-full text-sm font-semibold whitespace-nowrap relative" data-filter="pending">
                     待處理 
@@ -309,7 +332,7 @@
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="font-bold text-gray-800 text-lg"><i class="fas fa-robot text-purple-500 mr-2"></i>AI 助理設定</h3>
                     <a href="https://aistudio.google.com/app/apikey" target="_blank" class="btn-press text-[10px] bg-purple-50 text-purple-600 border border-purple-200 px-3 py-1.5 rounded-lg font-bold hover:bg-purple-100 transition-colors flex items-center shadow-sm">
-                        <i class="fas fa-external-link-alt mr-1"></i>免費申請 Key
+                        <i class="fas fa-external-link-alt mr-1"></i>免費申請取得 Key
                     </a>
                 </div>
                 <p class="text-xs text-gray-500 mb-4 leading-relaxed">輸入 Gemini API Key 以解鎖 AI 深度分析與專業 Word 報告生成 (金鑰將安全存於您的瀏覽器中)。</p>
@@ -446,7 +469,7 @@
             <div id="prof-admin-area" class="hidden space-y-4">
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
                     <h3 class="font-bold text-gray-800 mb-2 text-lg"><i class="fas fa-store text-blue-500 mr-2"></i>店家管理</h3>
-                    <p class="text-sm text-gray-500 mb-4 leading-relaxed">新增、停用 SES 與 STS 店家主檔，或批次上傳 CSV 檔案。</p>
+                    <p class="text-sm text-gray-500 mb-4 leading-relaxed">新增、修改、刪除及停用 SES 與 STS 店家主檔。</p>
                     <button onclick="navigate('admin-stores')" class="btn-press w-full bg-gray-100 text-gray-800 rounded-xl py-3 font-bold hover:bg-gray-200">管理店家</button>
                 </div>
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
@@ -601,7 +624,6 @@
             const el = document.getElementById(id); if(el) el.classList.add('hidden'); 
         };
 
-        // 開啟警告視窗邏輯
         window.openConfirmModal = function(title, msg, onConfirm) {
             document.getElementById('confirm-title').textContent = title;
             document.getElementById('confirm-msg').textContent = msg;
@@ -611,7 +633,6 @@
         };
 
         window.navigate = function(viewId) {
-            // 權限防護：工班不能進分析頁面
             if (viewId === 'analysis' && userRole === 'worker') {
                 showToast('您沒有權限存取分析報表', 'error');
                 return;
@@ -663,7 +684,6 @@
                 
                 const adminArea = document.getElementById('prof-admin-area'); if(adminArea) adminArea.classList.toggle('hidden', userRole !== 'admin');
                 
-                // 動態隱藏底部的「分析」按鈕 (如果是工班)
                 const btnNavAnalysis = document.querySelector('.bottom-nav-item[data-target="analysis"]');
                 if (btnNavAnalysis) {
                     if (userRole === 'worker') {
@@ -719,24 +739,38 @@
         });
 
         document.getElementById('btn-login-email')?.addEventListener('click', async () => {
-            const email = document.getElementById('login-email').value.trim(); const pwd = document.getElementById('login-password').value;
-            if(!email || !pwd) return showToast('請輸入帳號密碼', 'error');
+            const email = document.getElementById('login-email').value.trim(); 
+            const pwd = document.getElementById('login-password').value;
+            if(!email || !pwd) return showToast('請輸入帳號與密碼', 'error');
             showLoader(true);
             try { 
                 await signInWithEmailAndPassword(auth, email, pwd); 
             } catch (err) { 
-                showToast('登入失敗: 帳號或密碼錯誤。若您忘記密碼，請點擊上方忘記密碼，或使用 Google 登入', 'error'); 
+                if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
+                    showToast('登入失敗: 帳號或密碼錯誤。若您最初是使用 Google 登入，請點擊下方按鈕', 'error'); 
+                } else {
+                    showToast('登入失敗，請稍後再試', 'error'); 
+                }
             }
             showLoader(false);
         });
 
         document.getElementById('btn-register-email')?.addEventListener('click', async () => {
-            const email = document.getElementById('login-email').value.trim(); const pwd = document.getElementById('login-password').value;
+            const email = document.getElementById('login-email').value.trim(); 
+            const pwd = document.getElementById('login-password').value;
             if(!email || !pwd) return showToast('請填寫 Email 與密碼', 'error');
             if(pwd.length < 6) return showToast('密碼至少需要 6 個字元', 'error');
             showLoader(true);
-            try { await createUserWithEmailAndPassword(auth, email, pwd); showToast('註冊成功！', 'success'); } 
-            catch (err) { showToast(err.code === 'auth/email-already-in-use' ? '此信箱已被註冊過' : '註冊失敗', 'error'); }
+            try { 
+                await createUserWithEmailAndPassword(auth, email, pwd); 
+                showToast('註冊成功！', 'success'); 
+            } catch (err) { 
+                if (err.code === 'auth/email-already-in-use') {
+                    showToast('此信箱已註冊過，請直接點擊登入', 'error');
+                } else {
+                    showToast('註冊失敗，請重試', 'error'); 
+                }
+            }
             showLoader(false);
         });
 
@@ -1001,14 +1035,14 @@
                     const d = data.createdAt?.toDate ? data.createdAt.toDate().toLocaleDateString('zh-TW') : '剛剛';
                     
                     list.innerHTML += `
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center mb-3 cursor-pointer hover:bg-gray-50 transition-colors" onclick="viewHistoricalReport('${doc.id}')">
-                        <div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center mb-3 group hover:bg-gray-50 transition-colors">
+                        <div class="flex-1 cursor-pointer" onclick="viewHistoricalReport('${doc.id}')">
                             <div class="font-bold text-sm text-gray-800"><i class="fas fa-file-contract text-blue-500 mr-2"></i>${data.timeLabel} 分析報告</div>
                             <div class="text-xs text-gray-500 mt-1 font-medium">${d} 儲存</div>
                         </div>
-                        <div class="flex gap-2">
-                            <button class="btn-press text-blue-600 px-3 py-1.5 bg-blue-50 rounded-lg font-bold text-xs shadow-sm hover:bg-blue-100">調閱</button>
-                            <button onclick="event.stopPropagation(); window.promptDeleteReport('${doc.id}', '${data.timeLabel}')" class="btn-press text-red-600 px-3 py-1.5 bg-red-50 rounded-lg font-bold text-xs shadow-sm hover:bg-red-100"><i class="fas fa-trash-alt"></i></button>
+                        <div class="flex gap-2 items-center">
+                            <button onclick="viewHistoricalReport('${doc.id}')" class="btn-press text-blue-600 px-3 py-1.5 bg-blue-50 rounded-lg font-bold text-xs shadow-sm hover:bg-blue-100">調閱</button>
+                            <button onclick="window.promptDeleteReport('${doc.id}', '${data.timeLabel}')" class="btn-press text-red-600 px-3 py-1.5 bg-red-50 rounded-lg font-bold text-xs shadow-sm hover:bg-red-100 flex justify-center items-center"><i class="fas fa-trash-alt"></i></button>
                         </div>
                     </div>`;
                 });
@@ -1177,7 +1211,6 @@
                 if (s === 'samsung_review') { area.classList.remove('hidden'); container.innerHTML = `<div class="flex gap-3"><button onclick="updateTicketStatus('closed', 'samsung_approved', '同意結案')" class="btn-press flex-1 bg-indigo-600 text-white rounded-xl py-3.5 font-bold shadow-md">同意結案</button><button onclick="promptReject('samsung_rejected')" class="btn-press flex-1 bg-red-100 text-red-700 rounded-xl py-3.5 font-bold border border-red-200">退回</button></div>`; }
             }
             
-            // 最高管理員強制控制面板
             if (userRole === 'admin') {
                 area.classList.remove('hidden');
                 let adminHtml = `<div class="mt-4 pt-4 border-t border-gray-200"><h4 class="text-xs font-bold text-gray-500 mb-2"><i class="fas fa-shield-alt text-red-500 mr-1"></i>最高管理員強制操作</h4><div class="flex gap-2">`;
@@ -1260,6 +1293,7 @@
                 }, () => {});
             } catch (e) {}
         }
+        
         document.getElementById('form-new-store')?.addEventListener('submit', async (e) => {
             e.preventDefault(); if(userRole !== 'admin' && userRole !== 'calgit') return showToast('無權限', 'error');
             const data = { storeCode: document.getElementById('as-code').value.trim().toUpperCase(), channelType: document.getElementById('as-type').value, storeName: document.getElementById('as-name').value.trim(), region: document.getElementById('as-region').value.trim(), address: document.getElementById('as-address').value.trim(), active: true, createdAt: serverTimestamp(), createdBy: currentUser.uid };
@@ -1267,18 +1301,86 @@
             try { await addDoc(collection(db, 'workspaces', WORKSPACE, 'stores'), data); showToast('店家新增成功', 'success'); e.target.reset(); } catch(err) { showToast('新增失敗', 'error'); }
             showLoader(false);
         });
+
+        window.promptEditStore = function(id) {
+            const store = storesCache.find(s => s.id === id); if(!store) return;
+            document.getElementById('es-id').value = id;
+            document.getElementById('es-code').value = store.storeCode;
+            document.getElementById('es-type').value = store.channelType;
+            document.getElementById('es-name').value = store.storeName;
+            document.getElementById('es-region').value = store.region;
+            document.getElementById('es-address').value = store.address;
+            document.getElementById('modal-edit-store').classList.remove('hidden');
+        };
+
+        document.getElementById('btn-submit-edit-store')?.addEventListener('click', async () => {
+            const id = document.getElementById('es-id').value;
+            const data = {
+                storeCode: document.getElementById('es-code').value.trim().toUpperCase(),
+                channelType: document.getElementById('es-type').value,
+                storeName: document.getElementById('es-name').value.trim(),
+                region: document.getElementById('es-region').value.trim(),
+                address: document.getElementById('es-address').value.trim(),
+                updatedAt: serverTimestamp()
+            };
+            if(!data.storeCode || !data.storeName || !data.region || !data.address) return showToast('請填寫完整資訊', 'error');
+            showLoader(true);
+            try {
+                await updateDoc(doc(db, 'workspaces', WORKSPACE, 'stores', id), data);
+                showToast('修改成功', 'success');
+                closeModal('modal-edit-store');
+            } catch(e) { showToast('修改失敗', 'error'); }
+            showLoader(false);
+        });
+
+        window.promptDeleteStore = function(id, name) {
+            window.openConfirmModal('永久刪除店家？', `確定要刪除店家「${name}」嗎？此操作無法復原，且可能影響歷史報修紀錄的顯示。`, async () => {
+                showLoader(true);
+                try {
+                    await deleteDoc(doc(db, 'workspaces', WORKSPACE, 'stores', id));
+                    showToast('店家已刪除', 'success');
+                } catch(e) {
+                    showToast('刪除失敗，請確認權限', 'error');
+                }
+                showLoader(false);
+            });
+        };
+
         function loadAdminStores() {
             const list = document.getElementById('admin-stores-list'); if(!list) return;
             list.innerHTML = '<div class="text-center py-4"><div class="spinner inline-block"></div></div>';
+            
             onSnapshot(query(collection(db, 'workspaces', WORKSPACE, 'stores'), orderBy('createdAt', 'desc')), (snapshot) => {
-                list.innerHTML = ''; if (snapshot.empty) return list.innerHTML = '<div class="text-center text-gray-500 py-6"><p class="text-sm font-medium">尚無店家資料</p></div>';
-                snapshot.forEach(doc => {
-                    const data = doc.data(); const div = document.createElement('div'); div.className = `p-4 rounded-xl border shadow-sm ${data.active ? 'bg-white border-gray-100' : 'bg-gray-50 border-gray-200 opacity-70'}`;
-                    div.innerHTML = `<div class="flex justify-between items-start"><div><div class="font-bold text-sm text-gray-800">[${data.channelType}] ${data.storeCode} - ${data.storeName}</div><div class="text-xs text-gray-500 mt-1">${data.region} ${data.address}</div></div><button class="btn-press text-xs px-3 py-1.5 rounded-lg font-bold border shadow-sm ${data.active ? 'text-red-600 border-red-200 bg-red-50 hover:bg-red-100' : 'text-green-600 border-green-200 bg-green-50 hover:bg-green-100'}" onclick="toggleStoreStatus('${doc.id}', ${data.active})">${data.active ? '停用' : '啟用'}</button></div>`;
+                storesCache = []; 
+                list.innerHTML = ''; 
+                if (snapshot.empty) return list.innerHTML = '<div class="text-center text-gray-500 py-6"><p class="text-sm font-medium">尚無店家資料</p></div>';
+                
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data(); 
+                    storesCache.push({ id: docSnap.id, ...data });
+                    const div = document.createElement('div'); 
+                    div.className = `p-4 rounded-xl border shadow-sm ${data.active ? 'bg-white border-gray-100' : 'bg-gray-50 border-gray-200 opacity-70'}`;
+                    
+                    div.innerHTML = `
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div class="font-bold text-sm text-gray-800">[${data.channelType}] ${data.storeCode} - ${data.storeName}</div>
+                                <div class="text-xs text-gray-500 mt-1">${data.region} ${data.address}</div>
+                            </div>
+                            <span class="px-2 py-1 rounded text-[10px] font-bold border shadow-sm ${data.active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'}">${data.active ? '營運中' : '已停用'}</span>
+                        </div>
+                        <div class="flex gap-2 mt-2 pt-2 border-t border-gray-100">
+                            <button class="btn-press flex-1 text-xs py-1.5 rounded-lg font-bold border shadow-sm ${data.active ? 'text-orange-600 border-orange-200 bg-orange-50 hover:bg-orange-100' : 'text-green-600 border-green-200 bg-green-50 hover:bg-green-100'}" onclick="toggleStoreStatus('${docSnap.id}', ${data.active})">${data.active ? '停用' : '啟用'}</button>
+                            <button class="btn-press flex-1 text-xs py-1.5 rounded-lg font-bold border border-blue-200 bg-blue-50 text-blue-600 shadow-sm hover:bg-blue-100" onclick="window.promptEditStore('${docSnap.id}')">修改</button>
+                            <button class="btn-press w-10 text-xs py-1.5 rounded-lg font-bold border border-red-200 bg-red-50 text-red-600 shadow-sm hover:bg-red-100 flex justify-center items-center" onclick="window.promptDeleteStore('${docSnap.id}', '${data.storeName}')"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>`;
                     list.appendChild(div);
                 });
             }, () => { list.innerHTML = '<p class="text-sm text-red-500">載入失敗</p>'; });
         }
+        
         window.toggleStoreStatus = async function(id, currentActive) {
             if(userRole !== 'admin' && userRole !== 'calgit') return;
             try { await updateDoc(doc(db, 'workspaces', WORKSPACE, 'stores', id), { active: !currentActive }); showToast(`已${!currentActive ? '啟用' : '停用'}店家`, 'success'); } catch(e) {}
