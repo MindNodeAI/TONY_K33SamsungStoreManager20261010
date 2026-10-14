@@ -8,7 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js"></script>
 
@@ -22,7 +21,6 @@
             to { opacity: 1; transform: translateY(0) scale(1); } 
         }
         
-        /* Modal Animation */
         .modal-enter { animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes modalPop {
             from { opacity: 0; transform: scale(0.95) translateY(10px); }
@@ -41,7 +39,7 @@
         .spinner { border: 3px solid #e2e8f0; border-top: 3px solid #3b82f6; border-radius: 50%; width: 28px; height: 28px; animation: spin 0.8s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* Markdown Styles Polish */
+        /* Markdown 報表樣式 */
         .markdown-body h1 { font-size: 1.5rem; font-weight: 800; color: #1e3a8a; margin: 1.5rem 0 1rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; }
         .markdown-body h2 { font-size: 1.25rem; font-weight: 800; color: #2563eb; margin: 1.25rem 0 0.75rem; }
         .markdown-body h3 { font-size: 1.125rem; font-weight: 700; color: #334155; margin: 1rem 0 0.5rem; }
@@ -62,77 +60,148 @@
 </head>
 <body class="text-slate-800 antialiased h-screen flex flex-col overflow-hidden bg-slate-50">
 
-    <!-- Global Toast & Loader -->
-    <div id="toast-container" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-[70] flex flex-col gap-2 w-11/12 max-w-md pointer-events-none"></div>
-    <div id="global-loader" class="fixed inset-0 bg-white/70 backdrop-blur-md z-[70] flex flex-col items-center justify-center hidden transition-opacity duration-300">
-        <div class="spinner mb-4 shadow-sm"></div>
-        <p class="text-slate-600 font-bold text-sm tracking-wide">系統處理中...</p>
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] flex flex-col gap-2 w-11/12 max-w-md pointer-events-none"></div>
+    
+    <!-- Global Loader -->
+    <div id="global-loader" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[90] flex flex-col items-center justify-center hidden transition-opacity duration-300">
+        <div class="bg-white p-6 rounded-3xl shadow-2xl flex flex-col items-center">
+            <div class="spinner mb-4 shadow-sm border-slate-100 border-t-blue-600 w-10 h-10"></div>
+            <p class="text-slate-600 font-extrabold text-sm tracking-wide">系統處理中...</p>
+        </div>
     </div>
 
     <!-- Modal: Confirm Action (管理者刪除/取消用) -->
-    <div id="modal-confirm" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4 transition-opacity duration-300">
+    <div id="modal-confirm" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[80] hidden flex items-center justify-center p-4 transition-opacity duration-300">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden modal-enter border border-slate-100">
             <div class="p-8 text-center">
                 <div class="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 shadow-inner"><i class="fas fa-exclamation-triangle"></i></div>
                 <h3 id="confirm-title" class="text-2xl font-extrabold text-slate-800 mb-3">確認操作？</h3>
                 <p id="confirm-msg" class="text-sm text-slate-500 mb-8 leading-relaxed font-medium">這個操作無法復原。</p>
                 <div class="flex gap-3">
-                    <button onclick="closeModal('modal-confirm')" class="btn-press flex-1 py-4 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200">取消</button>
-                    <button id="btn-confirm-action" class="btn-press flex-1 py-4 bg-red-600 text-white rounded-xl font-bold shadow-md shadow-red-600/20 hover:bg-red-700">確認執行</button>
+                    <button onclick="closeModal('modal-confirm')" class="btn-press flex-1 py-4 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-colors">取消</button>
+                    <button id="btn-confirm-action" class="btn-press flex-1 py-4 bg-red-600 text-white rounded-xl font-bold shadow-md shadow-red-600/20 hover:bg-red-700 transition-colors">確認執行</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Modal: Complete Ticket (完工回報) -->
-    <div id="modal-complete" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center sm:p-4 transition-opacity duration-300">
-        <div class="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] modal-enter border-t sm:border border-slate-100">
-            <div class="p-5 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white/90 backdrop-blur-md rounded-t-3xl sm:rounded-t-3xl z-10">
-                <h3 class="text-lg font-extrabold text-slate-800">提交完工紀錄</h3>
+    <div id="modal-complete" class="fixed inset-0 bg-slate-900/50 backdrop-blur-md z-50 hidden flex items-end sm:items-center justify-center sm:p-4 transition-opacity duration-300">
+        <div class="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] modal-enter border-t sm:border border-slate-100 overflow-hidden">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-white z-10 shadow-sm">
+                <h3 class="text-lg font-extrabold text-slate-800 flex items-center"><div class="w-8 h-8 bg-green-50 text-green-600 rounded-lg flex items-center justify-center mr-3"><i class="fas fa-check-circle"></i></div>提交完工紀錄</h3>
                 <button onclick="closeModal('modal-complete')" class="text-slate-400 hover:text-slate-600 p-2 btn-press bg-slate-50 rounded-full w-8 h-8 flex items-center justify-center"><i class="fas fa-times"></i></button>
             </div>
-            <div class="p-6 overflow-y-auto space-y-6">
+            <div class="p-6 overflow-y-auto space-y-6 bg-slate-50/30">
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">完工說明 / 處置紀錄 <span class="text-red-500">*</span></label>
-                    <textarea id="mc-note" rows="3" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all resize-none bg-slate-50 focus:bg-white" placeholder="請詳細填寫實際維修內容..."></textarea>
+                    <label class="block text-sm font-bold text-slate-700 mb-2 flex items-center"><i class="fas fa-comment-alt text-slate-400 mr-1.5"></i>完工說明 / 處置紀錄 <span class="text-red-500 ml-1">*</span></label>
+                    <textarea id="mc-note" rows="3" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 text-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all resize-none bg-white shadow-sm" placeholder="請詳細填寫實際維修內容與更換零件..."></textarea>
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">完工照片 (施工後) <span class="text-red-500">*</span></label>
-                    <input type="file" id="mc-photos" accept="image/jpeg, image/png, image/webp" multiple class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-5 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 mb-2 transition-colors cursor-pointer">
+                    <label class="block text-sm font-bold text-slate-700 mb-2 flex items-center"><i class="fas fa-image text-slate-400 mr-1.5"></i>完工照片 (施工後) <span class="text-red-500 ml-1">*</span></label>
+                    <div class="border-2 border-dashed border-slate-300 rounded-2xl p-6 bg-white text-center relative hover:bg-blue-50 hover:border-blue-400 transition-all cursor-pointer group shadow-sm">
+                        <input type="file" id="mc-photos" accept="image/jpeg, image/png, image/webp" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                        <div class="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-slate-100 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-cloud-upload-alt text-2xl text-blue-500 group-hover:text-blue-600 transition-colors"></i>
+                        </div>
+                        <span class="text-sm font-bold text-slate-700 block group-hover:text-blue-700 transition-colors">點擊或拖曳上傳完工照片</span>
+                        <p class="text-xs text-slate-400 mt-1.5 font-medium">支援多張上傳，系統會自動優化壓縮</p>
+                    </div>
                     <div id="mc-photo-preview" class="flex flex-wrap gap-2 mt-4"></div>
                 </div>
             </div>
-            <div class="p-5 border-t border-slate-100 sticky bottom-0 bg-white rounded-b-3xl pb-safe">
-                <button id="btn-submit-completion" class="btn-press w-full bg-green-600 text-white rounded-xl py-4 font-bold shadow-lg shadow-green-600/20 hover:bg-green-700 text-base">確認送出完工</button>
+            <div class="p-5 border-t border-slate-100 bg-white pb-safe shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)]">
+                <button id="btn-submit-completion" class="btn-press w-full bg-green-600 text-white rounded-xl py-4 font-bold shadow-lg shadow-green-600/20 hover:bg-green-700 text-base flex items-center justify-center transition-colors"><i class="fas fa-paper-plane mr-2"></i>確認送出完工</button>
             </div>
         </div>
     </div>
 
     <!-- Modal: Edit Store -->
-    <div id="modal-edit-store" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 modal-enter">
-            <h3 class="text-lg font-extrabold mb-5 text-slate-800 flex items-center"><div class="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center mr-3"><i class="fas fa-edit"></i></div>編輯店家資訊</h3>
-            <input type="hidden" id="es-id">
-            <div class="space-y-4 mb-6">
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label class="block text-xs font-bold text-slate-500 mb-1.5">代碼 *</label><input type="text" id="es-code" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm uppercase bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all" required></div>
-                    <div><label class="block text-xs font-bold text-slate-500 mb-1.5">類型 *</label><select id="es-type" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all"><option value="SES">SES</option><option value="STS">STS</option></select></div>
+    <div id="modal-edit-store" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 transition-opacity duration-300">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden modal-enter border border-slate-100">
+            <div class="p-6 border-b border-slate-100 bg-white flex justify-between items-center">
+                <h3 class="text-lg font-extrabold text-slate-800 flex items-center"><div class="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center mr-3"><i class="fas fa-edit"></i></div>編輯店家資訊</h3>
+                <button onclick="closeModal('modal-edit-store')" class="text-slate-400 hover:text-slate-600 p-2 btn-press bg-slate-50 rounded-full w-8 h-8 flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 bg-slate-50/50 space-y-5">
+                <input type="hidden" id="es-id">
+                <div class="grid grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-2 flex items-center"><i class="fas fa-barcode text-slate-400 mr-1.5"></i>店家代碼 <span class="text-red-500 ml-1">*</span></label>
+                        <input type="text" id="es-code" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 text-sm uppercase bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 shadow-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-2 flex items-center"><i class="fas fa-tags text-slate-400 mr-1.5"></i>店家類型 <span class="text-red-500 ml-1">*</span></label>
+                        <select id="es-type" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 text-sm bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 shadow-sm">
+                            <option value="SES">SES 門市</option><option value="STS">STS 門市</option>
+                        </select>
+                    </div>
                 </div>
-                <div><label class="block text-xs font-bold text-slate-500 mb-1.5">名稱 *</label><input type="text" id="es-name" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all" required></div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label class="block text-xs font-bold text-slate-500 mb-1.5">縣市 *</label><input type="text" id="es-region" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all" required></div>
-                    <div><label class="block text-xs font-bold text-slate-500 mb-1.5">地址 *</label><input type="text" id="es-address" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all" required></div>
+                <div class="grid grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-2 flex items-center"><i class="fas fa-store-alt text-slate-400 mr-1.5"></i>店家名稱 <span class="text-red-500 ml-1">*</span></label>
+                        <input type="text" id="es-name" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 text-sm bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 shadow-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-2 flex items-center"><i class="fas fa-award text-slate-400 mr-1.5"></i>店格類型</label>
+                        <input type="text" id="es-grade" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 text-sm bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 shadow-sm" placeholder="如: A級, Flagship">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-2 flex items-center"><i class="fas fa-map text-slate-400 mr-1.5"></i>所在縣市 <span class="text-red-500 ml-1">*</span></label>
+                        <input type="text" id="es-region" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 text-sm bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 shadow-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-2 flex items-center"><i class="fas fa-map-marker-alt text-slate-400 mr-1.5"></i>詳細地址 <span class="text-red-500 ml-1">*</span></label>
+                        <input type="text" id="es-address" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 text-sm bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 shadow-sm" required>
+                    </div>
                 </div>
             </div>
-            <div class="flex justify-end gap-3">
-                <button onclick="closeModal('modal-edit-store')" class="btn-press px-5 py-3.5 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200">取消</button>
-                <button id="btn-submit-edit-store" class="btn-press px-5 py-3.5 bg-blue-600 text-white rounded-xl font-bold shadow-md shadow-blue-600/20 hover:bg-blue-700">儲存修改</button>
+            <div class="p-5 border-t border-slate-100 bg-white grid grid-cols-2 gap-3">
+                <button onclick="closeModal('modal-edit-store')" class="btn-press bg-slate-100 text-slate-700 rounded-xl py-3.5 font-bold hover:bg-slate-200 transition-colors">取消</button>
+                <button id="btn-submit-edit-store" class="btn-press bg-blue-600 text-white rounded-xl py-3.5 font-bold shadow-md shadow-blue-600/20 hover:bg-blue-700 transition-colors"><i class="fas fa-save mr-2"></i>儲存修改</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal: Batch Import Stores -->
+    <div id="modal-import-stores" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 transition-opacity duration-300">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden modal-enter border border-slate-100">
+            <div class="p-6 border-b border-slate-100 bg-white flex justify-between items-center">
+                <h3 class="text-lg font-extrabold text-slate-800 flex items-center"><div class="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center mr-3"><i class="fas fa-file-import"></i></div>批次匯入名單</h3>
+                <button onclick="closeModal('modal-import-stores')" class="text-slate-400 hover:text-slate-600 p-2 btn-press bg-slate-50 rounded-full w-8 h-8 flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 bg-slate-50/50 space-y-5">
+                <p class="text-sm text-slate-600 font-medium leading-relaxed">請上傳包含店家資料的檔案。支援使用 <strong class="text-emerald-600 font-extrabold">Excel (.xlsx, .xls) 或 CSV</strong> 格式。</p>
+                
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-xs text-slate-600">
+                    <p class="font-bold mb-3 flex items-center text-slate-700"><i class="fas fa-info-circle text-blue-500 mr-1.5"></i>智慧欄位辨識說明：</p>
+                    <ul class="list-disc pl-5 space-y-1.5 font-medium">
+                        <li>只要您的標題包含以下關鍵字即可：<br><strong class="text-slate-800">代碼、名稱/店名、類型、店格/級別、縣市、地址</strong>。</li>
+                        <li><strong class="text-emerald-600">不強迫全填</strong>：只要有「店名」，系統就能成功建檔，缺少的資訊會自動帶入預設值。</li>
+                    </ul>
+                </div>
+
+                <div class="border-2 border-dashed border-slate-300 rounded-2xl p-6 bg-white text-center relative hover:bg-emerald-50 hover:border-emerald-400 transition-all cursor-pointer group shadow-sm">
+                    <input type="file" id="import-file" accept=".xlsx, .xls, .csv" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                    <div class="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-emerald-100 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-file-excel text-3xl text-emerald-500 group-hover:text-emerald-600 transition-colors"></i>
+                    </div>
+                    <span class="text-sm font-bold text-slate-700 block group-hover:text-emerald-700 transition-colors">點擊或拖曳上傳名單檔案</span>
+                    <p class="text-xs text-slate-400 mt-2 font-bold bg-slate-100 inline-block px-3 py-1 rounded-full" id="import-file-name">支援 .xlsx, .csv 格式</p>
+                </div>
+            </div>
+            <div class="p-5 border-t border-slate-100 bg-white flex gap-3">
+                <button onclick="closeModal('modal-import-stores')" class="btn-press flex-1 bg-slate-100 text-slate-700 rounded-xl py-3.5 font-bold hover:bg-slate-200 transition-colors">取消</button>
+                <button id="btn-submit-import" class="btn-press flex-1 bg-emerald-600 text-white rounded-xl py-3.5 font-bold shadow-md shadow-emerald-600/20 hover:bg-emerald-700 transition-colors hidden justify-center items-center gap-2"><i class="fas fa-cloud-upload-alt text-lg"></i>確認開始匯入</button>
             </div>
         </div>
     </div>
 
     <!-- Modal: Pause / Reject / Assign -->
-    <div id="modal-pause" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div id="modal-pause" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 modal-enter border border-slate-100">
             <h3 class="text-lg font-extrabold mb-4 text-orange-600 flex items-center"><div class="w-8 h-8 bg-orange-50 text-orange-500 rounded-lg flex items-center justify-center mr-3"><i class="fas fa-pause-circle"></i></div>回報暫停 / 待料</h3>
             <div class="mb-5 space-y-3">
@@ -148,9 +217,9 @@
         </div>
     </div>
 
-    <div id="modal-reject" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div id="modal-reject" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 modal-enter border border-slate-100">
-            <h3 class="text-lg font-extrabold mb-4 text-red-600 flex items-center"><div class="w-8 h-8 bg-red-50 text-red-500 rounded-lg flex items-center justify-center mr-3"><i class="fas fa-exclamation-circle"></i></div>退回案件</h3>
+            <h3 class="text-lg font-extrabold mb-4 text-red-600 flex items-center"><div class="w-8 h-8 bg-red-50 text-red-500 rounded-lg flex items-center justify-center mr-3"><i class="fas fa-undo-alt"></i></div>退回案件</h3>
             <div class="mb-5">
                 <textarea id="mr-reason" rows="3" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-4 focus:ring-red-500/20 focus:border-red-500 outline-none bg-slate-50 focus:bg-white transition-all resize-none" placeholder="請說明退回原因..."></textarea>
             </div>
@@ -161,7 +230,7 @@
         </div>
     </div>
 
-    <div id="modal-assign" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div id="modal-assign" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 modal-enter border border-slate-100">
             <h3 class="text-lg font-extrabold mb-4 text-orange-600 flex items-center"><div class="w-8 h-8 bg-orange-50 text-orange-500 rounded-lg flex items-center justify-center mr-3"><i class="fas fa-hard-hat"></i></div>指派維護人員</h3>
             <div class="mb-5">
@@ -177,31 +246,30 @@
     </div>
 
     <!-- Modal: AI Report Export -->
-    <div id="modal-report" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center sm:p-4 transition-opacity duration-300">
-        <div class="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-2xl flex flex-col h-[90vh] sm:h-[85vh] modal-enter border border-slate-100">
-            <div class="p-5 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white/90 backdrop-blur-md rounded-t-3xl sm:rounded-t-3xl z-10">
+    <div id="modal-report" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-end sm:items-center justify-center sm:p-4 transition-opacity duration-300">
+        <div class="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-2xl flex flex-col h-[90vh] sm:h-[85vh] modal-enter border border-slate-100 overflow-hidden">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-white z-10 shadow-sm">
                 <h3 class="text-lg font-extrabold text-slate-800 flex items-center"><div class="w-8 h-8 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center mr-3"><i class="fas fa-chart-line"></i></div>統計與分析報告</h3>
-                <button onclick="closeModal('modal-report')" class="text-slate-400 hover:text-slate-600 p-2 btn-press bg-slate-50 rounded-full w-8 h-8 flex items-center justify-center"><i class="fas fa-times"></i></button>
+                <button onclick="closeModal('modal-report')" class="text-slate-400 hover:text-slate-600 p-2 btn-press bg-slate-50 rounded-full w-8 h-8 flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
             </div>
             <div class="p-6 overflow-y-auto flex-1 bg-slate-50/50">
-                <div id="report-content" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 min-h-[300px] markdown-body">
-                </div>
+                <div id="report-content" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 min-h-[300px] markdown-body"></div>
             </div>
-            <div class="p-5 border-t border-slate-100 sticky bottom-0 bg-white rounded-b-3xl pb-safe grid grid-cols-2 gap-3 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)]">
-                <button id="btn-save-report" class="btn-press col-span-2 bg-yellow-500 text-white rounded-xl py-3.5 font-bold shadow-md shadow-yellow-500/20 hover:bg-yellow-600 text-sm hidden flex items-center justify-center"><i class="fas fa-cloud-upload-alt mr-2"></i>儲存至雲端歷史紀錄</button>
-                <button id="btn-download-word" class="btn-press bg-blue-600 text-white rounded-xl py-3.5 font-bold shadow-md shadow-blue-600/20 hover:bg-blue-700 text-sm hidden flex items-center justify-center"><i class="fas fa-file-word mr-2 text-lg"></i>匯出 Word</button>
-                <button id="btn-download-excel" class="btn-press bg-emerald-600 text-white rounded-xl py-3.5 font-bold shadow-md shadow-emerald-600/20 hover:bg-emerald-700 text-sm hidden flex items-center justify-center"><i class="fas fa-file-excel mr-2 text-lg"></i>匯出 Excel</button>
-                <button onclick="closeModal('modal-report')" class="btn-press col-span-2 bg-slate-100 text-slate-700 rounded-xl py-3.5 font-bold hover:bg-slate-200 text-sm flex items-center justify-center">關閉報表</button>
+            <div class="p-5 border-t border-slate-100 bg-white pb-safe grid grid-cols-2 gap-3 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)] z-10">
+                <button id="btn-save-report" class="btn-press col-span-2 bg-yellow-500 text-white rounded-xl py-3.5 font-bold shadow-md shadow-yellow-500/20 hover:bg-yellow-600 text-sm hidden flex items-center justify-center transition-colors"><i class="fas fa-cloud-upload-alt mr-2 text-lg"></i>儲存至雲端歷史紀錄</button>
+                <button id="btn-download-word" class="btn-press bg-blue-600 text-white rounded-xl py-3.5 font-bold shadow-md shadow-blue-600/20 hover:bg-blue-700 text-sm hidden flex items-center justify-center transition-colors"><i class="fas fa-file-word mr-2 text-lg"></i>匯出 Word</button>
+                <button id="btn-download-excel" class="btn-press bg-emerald-600 text-white rounded-xl py-3.5 font-bold shadow-md shadow-emerald-600/20 hover:bg-emerald-700 text-sm hidden flex items-center justify-center transition-colors"><i class="fas fa-file-excel mr-2 text-lg"></i>匯出 Excel</button>
+                <button onclick="closeModal('modal-report')" class="btn-press col-span-2 bg-slate-100 text-slate-700 rounded-xl py-3.5 font-bold hover:bg-slate-200 text-sm flex items-center justify-center transition-colors">關閉報表</button>
             </div>
         </div>
     </div>
 
     <!-- Modal: User Manual -->
-    <div id="modal-manual" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center sm:p-4 transition-opacity duration-300">
-        <div class="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-2xl flex flex-col h-[90vh] sm:h-[85vh] modal-enter border border-slate-100">
-            <div class="p-5 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white/90 backdrop-blur-md rounded-t-3xl sm:rounded-t-3xl z-10">
+    <div id="modal-manual" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-end sm:items-center justify-center sm:p-4 transition-opacity duration-300">
+        <div class="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-2xl flex flex-col h-[90vh] sm:h-[85vh] modal-enter border border-slate-100 overflow-hidden">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-white z-10 shadow-sm">
                 <h3 class="text-lg font-extrabold text-slate-800 flex items-center"><div class="w-8 h-8 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center mr-3"><i class="fas fa-book"></i></div>系統操作手冊</h3>
-                <button onclick="closeModal('modal-manual')" class="text-slate-400 hover:text-slate-600 p-2 btn-press bg-slate-50 rounded-full w-8 h-8 flex items-center justify-center"><i class="fas fa-times"></i></button>
+                <button onclick="closeModal('modal-manual')" class="text-slate-400 hover:text-slate-600 p-2 btn-press bg-slate-50 rounded-full w-8 h-8 flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
             </div>
             <div class="p-6 overflow-y-auto flex-1 bg-slate-50/50">
                 <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200">
@@ -210,73 +278,69 @@
                     
                     <h3 class="text-lg font-extrabold text-slate-800 mt-6 mb-3 flex items-center"><i class="fas fa-user-shield text-blue-500 mr-2"></i>1. 角色權限說明</h3>
                     <ul class="list-disc pl-5 space-y-2 text-slate-600 text-sm font-medium">
-                        <li><strong class="text-slate-800">現場維護 (Worker)</strong>：僅可查看被指派的案件，進行「回報到場」、「暫停/待料」及「提交完工照片」。無法使用分析報表功能。</li>
-                        <li><strong class="text-slate-800">卡爾吉特 (Cogito)</strong>：可查看所有案件。負責將新案件「指派工班」，並在工班完工後進行「初步審核 (通過/退回)」。</li>
-                        <li><strong class="text-slate-800">三星人員 (Samsung)</strong>：可查看所有案件與使用 AI 營運報表。負責進行最終的「驗收結案」。</li>
-                        <li><strong class="text-slate-800">最高管理員 (Admin)</strong>：具備全系統控制權，包含「人員帳號審核」、「店家主檔增刪改」及「案件強制作廢/永久刪除」。</li>
+                        <li><strong class="text-slate-800">三星店家人員 (Store Staff)</strong>：僅可針對所屬的門市提出報修需求，並隨時追蹤案件進度。無分析報表與後台設定權限。</li>
+                        <li><strong class="text-slate-800">現場維護 (Worker)</strong>：僅可查看被指派的案件，進行「回報到場」、「暫停/待料」及「提交完工照片」。無分析報表與後台設定權限。</li>
+                        <li><strong class="text-slate-800">卡爾吉特 (Cogito)</strong>：可查看所有案件。負責將審核通過的新案件「指派工班」，並在工班完工後進行「初步審核 (通過/退回)」。可觀看並下載歷史分析報表。無後台設定權限。</li>
+                        <li><strong class="text-slate-800">三星人員 (Samsung)</strong>：可查看所有案件。負責「審核報修需求 (同意/退回)」與最終的「驗收結案」。可觀看並下載歷史分析報表。無後台設定權限。</li>
+                        <li><strong class="text-slate-800">最高管理員 (Admin)</strong>：具備全系統控制權，包含人員開通、店家管理、案件強制作廢/永久刪除，以及擁有「產生 AI 分析報表」與「刪除歷史報表」之最高權限。</li>
                     </ul>
 
-                    <h3 class="text-lg font-extrabold text-slate-800 mt-8 mb-3 flex items-center"><i class="fas fa-list-ul text-blue-500 mr-2"></i>2. 案件列表與過濾 (Dashboard)</h3>
-                    <ul class="list-disc pl-5 space-y-2 text-slate-600 text-sm font-medium">
-                        <li><strong>狀態過濾</strong>：畫面上方的按鈕 (待處理、處理中、待驗收、已結案) 可快速切換清單。按鈕右上方的<strong class="text-red-500">紅色數字</strong>代表目前該狀態下的案件數量。</li>
-                        <li><strong>分類與搜尋</strong>：可使用關鍵字搜尋門市名稱或單號，也可透過下拉選單篩選特定的維修項目 (如：SES招牌修繕)。</li>
-                    </ul>
+                    <h3 class="text-lg font-extrabold text-slate-800 mt-8 mb-3 flex items-center"><i class="fas fa-list-ul text-blue-500 mr-2"></i>2. 報修處理歷程 (Workflow)</h3>
+                    <ol class="list-decimal pl-5 space-y-2 text-slate-600 text-sm font-medium bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <li>店家提出報修需求</li>
+                        <li>三星審核報修需求 (同意交由卡爾吉特派工 / 退回店家)</li>
+                        <li>卡爾吉特指派工班</li>
+                        <li>維護人員回報到場</li>
+                        <li>維護人員提交完工紀錄</li>
+                        <li>卡爾吉特審核通過 (送三星驗收)</li>
+                        <li>三星驗收結案</li>
+                    </ol>
 
-                    <h3 class="text-lg font-extrabold text-slate-800 mt-8 mb-3 flex items-center"><i class="fas fa-plus-circle text-blue-500 mr-2"></i>3. 新增報修 (New Ticket)</h3>
+                    <h3 class="text-lg font-extrabold text-slate-800 mt-8 mb-3 flex items-center"><i class="fas fa-chart-pie text-blue-500 mr-2"></i>3. 分析與報表 (Analysis)</h3>
+                    <p class="text-sm text-slate-500 mb-3 font-medium">提供月、季、年的案件統計與 AI 洞察。</p>
                     <ul class="list-disc pl-5 space-y-2 text-slate-600 text-sm font-medium">
-                        <li>請依序選擇「店家類型(SES/STS)」>「報修門市」>「報修項目」。</li>
-                        <li>若選擇「其他」，需額外簡述項目名稱。</li>
-                        <li><strong>上傳照片</strong>：支援多張上傳，系統會自動在手機端壓縮照片，節省流量與上傳時間。</li>
-                    </ul>
-
-                    <h3 class="text-lg font-extrabold text-slate-800 mt-8 mb-3 flex items-center"><i class="fas fa-chart-pie text-blue-500 mr-2"></i>4. 分析與報表 (Analysis)</h3>
-                    <p class="text-sm text-slate-500 mb-3 font-medium">提供月、季、年的案件統計與 AI 洞察 (現場維護人員無此權限)。</p>
-                    <ul class="list-disc pl-5 space-y-2 text-slate-600 text-sm font-medium">
-                        <li><strong>AI 輔助設定</strong>：點擊「免費申請取得 Key」，取得 Google Gemini API Key 後貼入系統儲存，即可解鎖自動分析與圖表繪製功能。</li>
-                        <li><strong>雲端儲存與匯出</strong>：生成的報表可點擊「儲存至雲端」，供團隊隨時在清單中查閱。報表也支援一鍵匯出為 Word 與 Excel 檔。</li>
-                        <li><strong>刪除歷史報告</strong>：歷史報告清單中，具有權限的管理員可點擊紅色垃圾桶進行刪除。</li>
-                    </ul>
-
-                    <h3 class="text-lg font-extrabold text-slate-800 mt-8 mb-3 flex items-center"><i class="fas fa-cog text-blue-500 mr-2"></i>5. 系統設定 (Profile)</h3>
-                    <ul class="list-disc pl-5 space-y-2 text-slate-600 text-sm font-medium">
-                        <li>您可在此查看目前的登入帳號與角色，並安全登出。</li>
-                        <li><strong>管理員專區</strong> (僅管理員可見)：包含「店家主檔管理」(新增/修改/刪除/停用) 與「人員權限管理」(審核開通/指派角色/刪除人員)。</li>
+                        <li><strong>AI 輔助設定 (僅限最高管理員)</strong>：取得 Google Gemini API Key 後貼入系統，即可解鎖自動分析與圖表繪製功能。</li>
+                        <li><strong>產出與刪除報表 (僅限最高管理員)</strong>：只有最高管理員能消耗額度產出新報告與刪除舊報告。三星與卡爾吉特僅能觀看與下載。</li>
                     </ul>
                 </div>
             </div>
-            <div class="p-5 border-t border-slate-100 sticky bottom-0 bg-white rounded-b-3xl pb-safe">
-                <button onclick="closeModal('modal-manual')" class="btn-press w-full bg-slate-800 text-white rounded-xl py-4 font-bold shadow-md shadow-slate-800/20 hover:bg-slate-900 text-base flex items-center justify-center">了解，關閉手冊</button>
+            <div class="p-5 border-t border-slate-100 bg-white pb-safe shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)] z-10">
+                <button onclick="closeModal('modal-manual')" class="btn-press w-full bg-slate-800 text-white rounded-xl py-4 font-bold shadow-md shadow-slate-800/20 hover:bg-slate-900 text-base flex items-center justify-center transition-colors">了解，關閉手冊</button>
             </div>
         </div>
     </div>
 
     <!-- Main App Container -->
-    <div class="flex-1 overflow-y-auto w-full max-w-md mx-auto bg-white shadow-2xl shadow-slate-300/30 relative pb-20 pt-safe hide-scrollbar border-x border-slate-100">
+    <div class="flex-1 overflow-y-auto w-full max-w-md mx-auto bg-white shadow-2xl shadow-slate-300/30 relative pb-24 pt-safe hide-scrollbar border-x border-slate-100">
         
         <!-- Header -->
-        <header id="app-header" class="bg-white/90 backdrop-blur-md border-b border-slate-100 text-slate-800 p-4 sticky top-0 z-30 hidden flex items-center justify-between transition-all">
-            <h1 class="text-lg font-extrabold tracking-tight text-blue-800">Samsung Control Tower</h1>
+        <header id="app-header" class="bg-white/95 backdrop-blur-xl border-b border-slate-100 text-slate-800 p-4 sticky top-0 z-30 hidden flex items-center justify-between transition-all">
+            <h1 class="text-lg font-extrabold tracking-tight text-slate-800 flex items-center">
+                <img src="https://firebasestorage.googleapis.com/v0/b/k16-tony-ai-wisdom-platform.firebasestorage.app/o/assets%2F6av64EOvvqQNAIoXqcPfHC5BBeF3%2F1791996447509_Samsung_Orig_Wordmark_BLACK_RGB.png?alt=media&token=fe032e23-4c04-4e29-ac84-f64ea0940807" class="h-6 mr-2.5 object-contain" alt="Samsung"> 
+                Control Tower
+            </h1>
             <div class="flex items-center gap-1">
                 <button id="btn-header-notifications" class="relative p-2.5 rounded-full hover:bg-slate-100 text-slate-500 btn-press transition-colors">
                     <i class="fas fa-bell text-xl"></i>
-                    <span id="badge-notifications" class="absolute top-1 right-1 bg-red-500 border-2 border-white text-white text-[10px] font-extrabold w-[18px] h-[18px] flex items-center justify-center rounded-full hidden transform scale-0 transition-transform duration-300 shadow-sm">0</span>
+                    <span id="badge-notifications" class="absolute top-1.5 right-1.5 bg-red-500 border-2 border-white text-white text-[10px] font-extrabold w-[20px] h-[20px] flex items-center justify-center rounded-full hidden transform scale-0 transition-transform duration-300 shadow-sm">0</span>
                 </button>
                 <button id="btn-header-profile" class="p-2.5 rounded-full hover:bg-slate-100 text-slate-500 btn-press transition-colors" onclick="navigate('profile')"><i class="fas fa-user-circle text-xl"></i></button>
             </div>
         </header>
 
         <!-- View: Login -->
-        <div id="view-login" class="view-section active p-6 h-full flex flex-col bg-slate-50">
-            <div class="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full mt-8">
+        <div id="view-login" class="view-section active p-6 h-full flex flex-col bg-slate-50 relative">
+            <div class="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full z-10">
                 <div class="text-center mb-10">
-                    <img src="https://firebasestorage.googleapis.com/v0/b/k16-tony-ai-wisdom-platform.firebasestorage.app/o/assets%2F6av64EOvvqQNAIoXqcPfHC5BBeF3%2F1791740159735_Samsung%20logo.jpg?alt=media&token=4980b298-bd39-4166-8dfd-8058ba9d0e9c" alt="Samsung Logo" class="h-12 mx-auto mb-5 object-contain drop-shadow-sm">
+                    <img src="https://firebasestorage.googleapis.com/v0/b/k16-tony-ai-wisdom-platform.firebasestorage.app/o/assets%2F6av64EOvvqQNAIoXqcPfHC5BBeF3%2F1791996447509_Samsung_Orig_Wordmark_BLACK_RGB.png?alt=media&token=fe032e23-4c04-4e29-ac84-f64ea0940807" alt="Samsung Logo" class="h-16 mx-auto mb-6 object-contain drop-shadow-sm">
                     <h2 class="text-2xl font-extrabold text-slate-800 tracking-tight">Cogito Control Tower</h2>
-                    <p class="text-sm text-slate-500 mt-2 font-medium">SES與STS門市報修派工與驗收平台</p>
+                    <p class="text-sm text-slate-500 mt-2 font-medium">SES與STS門市報修 派工與驗收協作平台</p>
                 </div>
+                
                 <div class="space-y-4 bg-white p-6 rounded-3xl shadow-sm border border-slate-100/80">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Email</label>
-                        <input type="email" id="login-email" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-slate-50 focus:bg-white text-sm font-medium" placeholder="輸入 Email">
+                        <input type="email" id="login-email" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 focus:ring-4 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition-all bg-slate-50 focus:bg-white text-sm font-medium" placeholder="輸入您的信箱">
                     </div>
                     <div>
                         <div class="flex justify-between items-end mb-1.5">
@@ -284,51 +348,57 @@
                             <button type="button" id="btn-forgot-password" class="text-xs text-blue-600 hover:text-blue-800 font-bold btn-press transition-colors">忘記密碼？</button>
                         </div>
                         <div class="relative w-full">
-                            <input type="password" id="login-password" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 pr-12 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-slate-50 focus:bg-white text-sm font-medium" placeholder="輸入密碼">
+                            <input type="password" id="login-password" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 pr-12 focus:ring-4 focus:ring-blue-500/30 focus:border-blue-500 outline-none transition-all bg-slate-50 focus:bg-white text-sm font-medium" placeholder="輸入您的密碼">
                             <button type="button" id="btn-toggle-password" class="absolute inset-y-0 right-0 px-4 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none transition-colors">
-                                <i id="icon-toggle-password" class="fas fa-eye text-lg"></i>
+                                <i id="icon-toggle-password" class="fas fa-eye-slash text-lg"></i>
                             </button>
                         </div>
                     </div>
                     <div class="flex gap-3 pt-3">
-                        <button id="btn-login" class="btn-press flex-1 bg-blue-600 text-white rounded-xl py-3.5 font-bold shadow-md shadow-blue-600/20 hover:bg-blue-700">登入</button>
-                        <button id="btn-register" class="btn-press flex-1 bg-emerald-500 text-white rounded-xl py-3.5 font-bold shadow-md shadow-emerald-500/20 hover:bg-emerald-600">註冊帳號</button>
+                        <button id="btn-login-email" class="btn-press flex-1 bg-blue-600 text-white rounded-xl py-3.5 font-bold shadow-md shadow-blue-600/20 hover:bg-blue-700 transition-colors">登入</button>
+                        <button id="btn-register-email" class="btn-press flex-1 bg-emerald-500 text-white rounded-xl py-3.5 font-bold shadow-md shadow-emerald-500/20 hover:bg-emerald-600 transition-colors">註冊帳號</button>
                     </div>
+                    
                     <div class="relative flex py-5 items-center">
                         <div class="flex-grow border-t border-slate-100"></div>
                         <span class="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold uppercase tracking-wider">或</span>
                         <div class="flex-grow border-t border-slate-100"></div>
                     </div>
+                    
                     <button id="btn-login-google" class="btn-press w-full bg-white border border-slate-200 text-slate-700 rounded-xl py-3.5 font-bold shadow-sm hover:shadow hover:border-slate-300 transition-all flex items-center justify-center gap-3">
                         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="w-5 h-5">
                         使用 Google 登入
                     </button>
                 </div>
             </div>
-            <div class="mt-auto pt-10 pb-2 text-center">
-                <p class="text-[10px] text-slate-400 font-semibold tracking-wider">系統平台設計由 &copy; 2026 TonyStudio 楊文澤顧問設計<br>All Rights Reserved</p>
+            
+            <div class="mt-auto pt-10 pb-4 text-center z-10">
+                <p class="text-[10px] text-slate-400 font-semibold tracking-wider leading-relaxed">
+                    系統平台設計由 &copy; 2026 TonyStudio 楊文澤顧問設計<br>All Rights Reserved
+                </p>
             </div>
         </div>
 
+        <!-- View: Dashboard -->
         <div id="view-dashboard" class="view-section p-4 bg-slate-50 min-h-full">
             <div class="flex justify-between items-center mb-5 mt-2 px-1">
                 <h2 class="text-2xl font-extrabold text-slate-800 tracking-tight">案件列表</h2>
                 <div id="role-badge" class="text-[11px] bg-slate-800 text-white px-3 py-1.5 rounded-full font-bold shadow-sm shadow-slate-400/20 tracking-wider">載入中</div>
             </div>
             
-            <div class="flex gap-2 mb-6 overflow-x-auto pb-2 pt-2 px-1 hide-scrollbar -mx-1">
+            <div class="flex gap-2 mb-6 overflow-x-auto pt-2 pb-3 px-1 hide-scrollbar -mx-1">
                 <button class="filter-btn btn-press mt-2 active bg-blue-600 text-white border border-blue-600 px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap shadow-md shadow-blue-500/20 transition-all" data-filter="all">全部</button>
                 <button class="filter-btn btn-press mt-2 bg-white text-slate-600 border border-slate-200 px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap relative shadow-sm hover:bg-slate-50 transition-all" data-filter="pending">
                     待處理 
-                    <span id="badge-filter-pending" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-extrabold w-[20px] h-[20px] flex items-center justify-center rounded-full hidden shadow-sm border-2 border-white">0</span>
+                    <span id="badge-filter-pending" class="absolute -top-2.5 -right-2 bg-red-500 border-2 border-white text-white text-[10px] font-extrabold w-[22px] h-[22px] flex items-center justify-center rounded-full hidden shadow-sm z-10">0</span>
                 </button>
                 <button class="filter-btn btn-press mt-2 bg-white text-slate-600 border border-slate-200 px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap relative shadow-sm hover:bg-slate-50 transition-all" data-filter="active">
                     處理中 
-                    <span id="badge-filter-active" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-extrabold w-[20px] h-[20px] flex items-center justify-center rounded-full hidden shadow-sm border-2 border-white">0</span>
+                    <span id="badge-filter-active" class="absolute -top-2.5 -right-2 bg-red-500 border-2 border-white text-white text-[10px] font-extrabold w-[22px] h-[22px] flex items-center justify-center rounded-full hidden shadow-sm z-10">0</span>
                 </button>
                 <button class="filter-btn btn-press mt-2 bg-white text-slate-600 border border-slate-200 px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap relative shadow-sm hover:bg-slate-50 transition-all" data-filter="review">
                     待驗收 
-                    <span id="badge-filter-review" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-extrabold w-[20px] h-[20px] flex items-center justify-center rounded-full hidden shadow-sm border-2 border-white">0</span>
+                    <span id="badge-filter-review" class="absolute -top-2.5 -right-2 bg-red-500 border-2 border-white text-white text-[10px] font-extrabold w-[22px] h-[22px] flex items-center justify-center rounded-full hidden shadow-sm z-10">0</span>
                 </button>
                 <button class="filter-btn btn-press mt-2 bg-white text-slate-600 border border-slate-200 px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap shadow-sm hover:bg-slate-50 transition-all" data-filter="closed">
                     已結案
@@ -338,7 +408,7 @@
             <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 mb-6 flex flex-col gap-3 relative z-10">
                 <div class="relative">
                     <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
-                    <input type="text" id="search-keyword" class="w-full bg-slate-50 border border-transparent rounded-xl pl-11 pr-4 py-3 text-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white outline-none transition-all font-medium placeholder-slate-400" placeholder="搜尋門市名稱或案件編號...">
+                    <input type="text" id="search-keyword" class="w-full bg-slate-50 border border-transparent rounded-xl pl-11 pr-4 py-3 text-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white outline-none transition-all font-medium placeholder-slate-400" placeholder="即時搜尋門市名稱或單號...">
                 </div>
                 <div class="flex gap-2">
                     <select id="search-category" class="flex-1 bg-slate-50 border border-transparent rounded-xl px-4 py-3 text-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white outline-none font-bold text-slate-600 transition-all">
@@ -356,26 +426,28 @@
             <div id="tickets-list" class="space-y-4 pb-6 px-1"></div>
         </div>
 
+        <!-- View: New Ticket -->
         <div id="view-new-ticket" class="view-section p-4 bg-slate-50 min-h-full">
             <div class="flex items-center mb-6 gap-3 pt-2 px-1">
                 <button onclick="navigate('dashboard')" class="btn-press text-slate-500 p-2 -ml-2 bg-white rounded-full shadow-sm border border-slate-100 w-10 h-10 flex items-center justify-center hover:text-blue-600 transition-colors"><i class="fas fa-arrow-left"></i></button>
                 <h2 class="text-2xl font-extrabold text-slate-800 tracking-tight">新增報修</h2>
             </div>
+            
             <form id="form-new-ticket" class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-6">
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">店家類型 <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-bold text-slate-700 mb-2 flex items-center"><i class="fas fa-tags text-slate-400 mr-1.5"></i>店家類型 <span class="text-red-500 ml-1">*</span></label>
                     <select id="nt-channel" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all font-bold text-slate-700" required>
                         <option value="">請選擇類型</option><option value="SES">SES 門市</option><option value="STS">STS 門市</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">報修門市 <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-bold text-slate-700 mb-2 flex items-center"><i class="fas fa-store-alt text-slate-400 mr-1.5"></i>報修門市 <span class="text-red-500 ml-1">*</span></label>
                     <select id="nt-store" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all font-bold text-slate-700 disabled:opacity-50" required disabled>
                         <option value="">請先選擇店家類型</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">報修項目 <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-bold text-slate-700 mb-2 flex items-center"><i class="fas fa-tools text-slate-400 mr-1.5"></i>報修項目 <span class="text-red-500 ml-1">*</span></label>
                     <select id="nt-category" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all font-bold text-slate-700 disabled:opacity-50" required disabled>
                         <option value="">請先選擇店家類型</option>
                     </select>
@@ -385,34 +457,37 @@
                     <input type="text" id="nt-other-name" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all font-medium bg-slate-50 text-slate-700" placeholder="請簡述項目 (1-100字)" maxlength="100">
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">問題詳細描述 <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-bold text-slate-700 mb-2 flex items-center"><i class="fas fa-comment-alt text-slate-400 mr-1.5"></i>問題詳細描述 <span class="text-red-500 ml-1">*</span></label>
                     <textarea id="nt-description" rows="4" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all resize-none bg-slate-50 text-slate-700 font-medium" placeholder="請詳細描述損壞狀況或需要維修的地方..." required></textarea>
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">現場照片上傳</label>
-                    <div class="border-2 border-dashed border-slate-200 rounded-2xl p-5 bg-slate-50 text-center relative hover:bg-slate-100 hover:border-blue-300 transition-colors cursor-pointer group">
+                    <label class="block text-sm font-bold text-slate-700 mb-2 flex items-center"><i class="fas fa-camera text-slate-400 mr-1.5"></i>現場照片上傳</label>
+                    <div class="border-2 border-dashed border-slate-300 rounded-2xl p-6 bg-slate-50/50 text-center relative hover:bg-blue-50 hover:border-blue-400 transition-all cursor-pointer group shadow-sm">
                         <input type="file" id="nt-photos" accept="image/jpeg, image/png, image/webp" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-                        <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-slate-100 group-hover:scale-110 transition-transform"><i class="fas fa-camera text-xl text-blue-500"></i></div>
-                        <span class="text-sm font-bold text-blue-600 block">點擊或拖曳上傳照片</span>
-                        <p class="text-xs text-slate-400 mt-1.5 font-medium">系統會自動壓縮節省流量 (最多 10 張)</p>
+                        <div class="w-14 h-14 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-slate-200 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-cloud-upload-alt text-2xl text-blue-500 group-hover:text-blue-600 transition-colors"></i>
+                        </div>
+                        <span class="text-sm font-bold text-slate-700 block group-hover:text-blue-700 transition-colors">點擊或拖曳上傳現場照片</span>
+                        <p class="text-xs text-slate-500 mt-1.5 font-medium">支援多張上傳，系統會自動優化壓縮</p>
                     </div>
                     <div id="nt-photo-preview" class="flex flex-wrap gap-2 mt-4"></div>
                 </div>
-                <button type="submit" id="btn-submit-ticket" class="btn-press w-full bg-blue-600 text-white rounded-xl py-4 font-bold shadow-lg shadow-blue-600/20 hover:bg-blue-700 text-lg mt-4 transition-all">送出報修</button>
+                <button type="submit" id="btn-submit-ticket" class="btn-press w-full bg-blue-600 text-white rounded-xl py-4 font-bold shadow-lg shadow-blue-600/20 hover:bg-blue-700 text-lg mt-4 transition-all flex items-center justify-center"><i class="fas fa-paper-plane mr-2"></i>確認送出報修</button>
             </form>
         </div>
 
+        <!-- View: Analysis -->
         <div id="view-analysis" class="view-section p-4 bg-slate-50 min-h-full">
             <h2 class="text-2xl font-extrabold text-slate-800 mb-6 pt-2 px-1 tracking-tight">分析與報表</h2>
             
-            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 mb-5">
+            <div id="ana-admin-ai-settings" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 mb-5 hidden">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="font-extrabold text-slate-800 text-lg flex items-center"><div class="w-8 h-8 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center mr-3"><i class="fas fa-robot"></i></div>AI 助理設定</h3>
                     <a href="https://aistudio.google.com/app/apikey" target="_blank" class="btn-press text-[11px] bg-purple-50 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-lg font-bold hover:bg-purple-100 transition-colors flex items-center shadow-sm">
-                        <i class="fas fa-external-link-alt mr-1.5"></i>免費申請取得 Key
+                        <i class="fas fa-external-link-alt mr-1.5"></i>免費申請 Key
                     </a>
                 </div>
-                <p class="text-xs text-slate-500 mb-5 leading-relaxed font-medium">輸入 Gemini API Key 以解鎖 AI 深度分析與專業 Word 報告。(金鑰安全記憶於您的瀏覽器)</p>
+                <p class="text-xs text-slate-500 mb-5 leading-relaxed font-medium">貼入 Gemini API Key 以解鎖 AI 深度分析與圖表功能。(僅限最高管理員設定)</p>
                 <div class="space-y-4">
                     <input type="password" id="input-ai-key" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 bg-slate-50 focus:bg-white transition-all font-mono" placeholder="貼上您的 Gemini API Key">
                     <div class="flex gap-3">
@@ -422,9 +497,9 @@
                 </div>
             </div>
 
-            <!-- Generate Report Panel -->
-            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 mb-5">
-                <h3 class="font-extrabold text-slate-800 mb-5 text-lg flex items-center"><div class="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center mr-3"><i class="fas fa-chart-pie"></i></div>產生營運分析</h3>
+            <!-- Generate Report Panel (Admin Only) -->
+            <div id="ana-admin-generate" class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 mb-5 hidden">
+                <h3 class="font-extrabold text-slate-800 mb-5 text-lg flex items-center"><div class="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center mr-3"><i class="fas fa-chart-pie"></i></div>產生營運分析報告</h3>
                 <div class="space-y-5">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">分析時間維度</label>
@@ -475,8 +550,9 @@
             </div>
         </div>
 
+        <!-- View: Ticket Detail -->
         <div id="view-ticket-detail" class="view-section bg-slate-50 min-h-full pb-10">
-            <div class="bg-white/90 backdrop-blur-md p-4 shadow-sm border-b border-slate-100 sticky top-0 z-30 flex items-center gap-3">
+            <div class="bg-white/95 backdrop-blur-xl p-4 shadow-sm border-b border-slate-100 sticky top-0 z-30 flex items-center gap-3">
                 <button onclick="navigate('dashboard')" class="btn-press text-slate-500 p-2 -ml-2 bg-slate-50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-slate-100 transition-colors"><i class="fas fa-arrow-left"></i></button>
                 <div class="flex-1 min-w-0">
                     <h2 class="text-lg font-extrabold truncate text-slate-800" id="td-title">載入中...</h2>
@@ -487,7 +563,6 @@
             
             <div class="p-4 space-y-4">
                 <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden">
-                    <!-- Subtle background decoration -->
                     <div class="absolute -right-10 -top-10 text-slate-50 opacity-50 pointer-events-none">
                         <i class="fas fa-file-invoice text-[120px]"></i>
                     </div>
@@ -528,6 +603,7 @@
             </div>
         </div>
 
+        <!-- View: Profile -->
         <div id="view-profile" class="view-section p-4 bg-slate-50 min-h-full">
              <div class="flex items-center mb-6 gap-3 pt-2 px-1">
                 <button onclick="navigate('dashboard')" class="btn-press text-slate-500 p-2 -ml-2 bg-white rounded-full shadow-sm border border-slate-100 w-10 h-10 flex items-center justify-center hover:text-blue-600 transition-colors"><i class="fas fa-arrow-left"></i></button>
@@ -556,10 +632,10 @@
 
             <!-- Admin Area -->
             <div id="prof-admin-area" class="hidden space-y-4">
-                <h3 class="font-extrabold text-slate-400 text-xs uppercase tracking-wider mb-2 ml-2 mt-4"><i class="fas fa-shield-alt mr-1.5 text-red-400"></i>管理員專區</h3>
+                <h3 class="font-extrabold text-slate-400 text-xs uppercase tracking-wider mb-2 ml-2 mt-4"><i class="fas fa-shield-alt mr-1.5 text-red-400"></i>最高管理員專區</h3>
                 <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
                     <h3 class="font-extrabold text-slate-800 mb-3 text-lg flex items-center"><div class="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center mr-3"><i class="fas fa-store"></i></div>店家管理</h3>
-                    <p class="text-sm text-slate-500 mb-5 leading-relaxed font-medium">新增、修改、刪除及停用 SES 與 STS 店家主檔。</p>
+                    <p class="text-sm text-slate-500 mb-5 leading-relaxed font-medium">新增、修改、刪除、批次匯入及停用 SES 與 STS 店家主檔，包含店家照片建檔。</p>
                     <button onclick="navigate('admin-stores')" class="btn-press w-full bg-slate-800 text-white rounded-xl py-3.5 font-bold shadow-md shadow-slate-800/20 hover:bg-slate-900 transition-colors">管理店家</button>
                 </div>
                 <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
@@ -577,35 +653,60 @@
                 <h2 class="text-2xl font-extrabold text-slate-800 tracking-tight">店家主檔管理</h2>
             </div>
             
-            <form id="form-new-store" class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6 space-y-5">
-                <h3 class="font-extrabold text-slate-800 border-b border-slate-100 pb-3 flex items-center"><i class="fas fa-plus-circle text-blue-500 mr-2 text-lg"></i>新增單一店家</h3>
-                <div class="grid grid-cols-2 gap-4 mt-2">
+            <form id="form-new-store" class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-5">
+                    <h3 class="font-extrabold text-slate-800 flex items-center text-lg"><div class="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center mr-3"><i class="fas fa-plus"></i></div>新增單一店家</h3>
+                    <button type="button" onclick="window.promptImportStores()" class="btn-press bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-100 transition-colors flex items-center shadow-sm">
+                        <i class="fas fa-file-import mr-1.5"></i>批次匯入
+                    </button>
+                </div>
+                
+                <!-- 單一門市照片上傳 -->
+                <div class="mb-5 border-b border-slate-100 pb-5">
+                    <label class="block text-xs font-bold text-slate-500 mb-2 flex items-center"><i class="fas fa-image text-slate-400 mr-1.5"></i>門市照片上傳 (選填)</label>
+                    <div class="border-2 border-dashed border-slate-300 rounded-2xl p-6 bg-white text-center relative hover:bg-blue-50 hover:border-blue-400 transition-all cursor-pointer group shadow-sm">
+                        <input type="file" id="as-photo" accept="image/jpeg, image/png, image/webp" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                        <div class="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-slate-100 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-cloud-upload-alt text-2xl text-blue-500 group-hover:text-blue-600 transition-colors"></i>
+                        </div>
+                        <span class="text-sm font-bold text-slate-700 block group-hover:text-blue-700 transition-colors">點擊或拖曳上傳門市外觀照</span>
+                    </div>
+                    <div id="as-photo-preview" class="mt-4 hidden"></div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-5 mb-5">
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1.5">代碼 *</label>
-                        <input type="text" id="as-code" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm uppercase bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-bold text-slate-700" required placeholder="如: TPE01">
+                        <label class="block text-xs font-bold text-slate-500 mb-2 flex items-center"><i class="fas fa-barcode text-slate-400 mr-1.5"></i>店家代碼 <span class="text-red-500 ml-1">*</span></label>
+                        <input type="text" id="as-code" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 text-sm uppercase bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 shadow-sm" required placeholder="如: TPE01">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1.5">類型 *</label>
-                        <select id="as-type" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-bold text-slate-700" required>
-                            <option value="SES">SES</option><option value="STS">STS</option>
+                        <label class="block text-xs font-bold text-slate-500 mb-2 flex items-center"><i class="fas fa-tags text-slate-400 mr-1.5"></i>店家類型 <span class="text-red-500 ml-1">*</span></label>
+                        <select id="as-type" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 text-sm bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 shadow-sm" required>
+                            <option value="SES">SES 門市</option><option value="STS">STS 門市</option>
                         </select>
                     </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1.5">名稱 *</label>
-                    <input type="text" id="as-name" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-bold text-slate-700" required placeholder="門市名稱">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-2 gap-5 mb-5">
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1.5">縣市 *</label>
-                        <input type="text" id="as-region" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-bold text-slate-700" required placeholder="如: 台北市">
+                        <label class="block text-xs font-bold text-slate-500 mb-2 flex items-center"><i class="fas fa-store-alt text-slate-400 mr-1.5"></i>店家名稱 <span class="text-red-500 ml-1">*</span></label>
+                        <input type="text" id="as-name" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 text-sm bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 shadow-sm" required placeholder="完整門市名稱">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1.5">地址 *</label>
-                        <input type="text" id="as-address" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-bold text-slate-700" required placeholder="詳細地址">
+                        <label class="block text-xs font-bold text-slate-500 mb-2 flex items-center"><i class="fas fa-award text-slate-400 mr-1.5"></i>店格類型</label>
+                        <input type="text" id="as-grade" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 text-sm bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 shadow-sm" placeholder="如: A級, Flagship">
                     </div>
                 </div>
-                <button type="submit" class="btn-press w-full bg-slate-800 text-white rounded-xl py-3.5 text-sm font-bold mt-2 shadow-md shadow-slate-800/20 hover:bg-slate-900 transition-colors">新增店家</button>
+                <div class="grid grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-2 flex items-center"><i class="fas fa-map text-slate-400 mr-1.5"></i>所在縣市 <span class="text-red-500 ml-1">*</span></label>
+                        <input type="text" id="as-region" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 text-sm bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 shadow-sm" required placeholder="如: 台北市">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-2 flex items-center"><i class="fas fa-map-marker-alt text-slate-400 mr-1.5"></i>詳細地址 <span class="text-red-500 ml-1">*</span></label>
+                        <input type="text" id="as-address" class="w-full border border-slate-200 rounded-xl px-4 py-3.5 text-sm bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-bold text-slate-700 shadow-sm" required placeholder="門市地址">
+                    </div>
+                </div>
+                <button type="submit" class="btn-press w-full bg-slate-800 text-white rounded-xl py-4 text-sm font-bold mt-6 shadow-md shadow-slate-800/20 hover:bg-slate-900 transition-colors flex items-center justify-center"><i class="fas fa-save mr-2"></i>新增單筆店家</button>
             </form>
 
             <h3 class="font-extrabold text-slate-800 mb-4 px-2 flex items-center"><i class="fas fa-list mr-2 text-slate-400"></i>現有店家列表</h3>
@@ -638,7 +739,7 @@
     </div>
 
     <!-- Bottom Navigation -->
-    <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-white/90 backdrop-blur-xl border-t border-slate-100 flex justify-around items-center pb-safe z-30 hidden shadow-[0_-10px_30px_rgba(0,0,0,0.03)]">
+    <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto bg-white/95 backdrop-blur-xl border-t border-slate-100 flex justify-around items-center pb-safe z-30 hidden shadow-[0_-10px_30px_rgba(0,0,0,0.03)]">
         <button onclick="navigate('dashboard')" class="bottom-nav-item flex-1 py-3.5 flex flex-col items-center gap-1.5 active btn-press text-slate-400" data-target="dashboard">
             <i class="fas fa-list-ul text-[22px]"></i>
             <span class="text-[10px] font-bold tracking-wider">案件</span>
@@ -682,6 +783,7 @@
 
         let currentUser = null;
         let userRole = null; 
+        let userStoreId = null; 
         let currentView = 'login';
         let storesCache = [];
         let allTicketsCache = [];
@@ -690,19 +792,19 @@
         let reportsListener = null;
         let reportsCache = [];
         let currentReportPayload = null;
+        let importData = null; 
         
         let filters = { status: 'all', keyword: '', category: '', sort: 'desc' };
         let geminiApiKey = localStorage.getItem('geminiApiKey') || "";
         if (geminiApiKey && document.getElementById('input-ai-key')) { document.getElementById('input-ai-key').value = '********'; }
 
-        // UI Helpers
         function showLoader(show) { document.getElementById('global-loader').classList.toggle('hidden', !show); }
         
         function showToast(msg, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             const color = type === 'error' ? 'bg-red-600' : (type === 'success' ? 'bg-emerald-600' : 'bg-slate-800');
-            toast.className = `${color} text-white px-5 py-4 rounded-2xl shadow-xl shadow-[0_10px_20px_rgba(0,0,0,0.15)] text-sm flex items-center justify-between transition-all duration-400 transform -translate-y-full opacity-0 font-bold border border-white/10`;
+            toast.className = `${color} text-white px-5 py-4 rounded-2xl shadow-xl shadow-[0_10px_20px_rgba(0,0,0,0.15)] text-sm flex items-center justify-between transition-all duration-400 transform -translate-y-full opacity-0 font-bold border border-white/10 z-[100]`;
             let icon = type === 'error' ? 'fa-exclamation-circle' : (type === 'success' ? 'fa-check-circle' : 'fa-info-circle');
             toast.innerHTML = `<div class="flex items-center"><i class="fas ${icon} mr-3 text-lg opacity-80"></i><span>${msg}</span></div><button class="ml-4 opacity-60 hover:opacity-100 pointer-events-auto btn-press w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors"><i class="fas fa-times"></i></button>`;
             container.appendChild(toast);
@@ -729,11 +831,15 @@
             btnConfirm.onclick = () => { closeModal('modal-confirm'); onConfirm(); };
         };
 
-        // Navigation logic
         window.navigate = function(viewId) {
-            if (viewId === 'analysis' && userRole === 'worker') {
-                showToast('現場維護人員無權限存取分析報表', 'error');
-                return;
+            // 安全防護：攔截工班與店家人員前往分析頁面
+            if (viewId === 'analysis' && (userRole === 'worker' || userRole === 'store_staff')) {
+                showToast('無權限存取分析報表', 'error'); return;
+            }
+            
+            // 安全防護：強制攔截非最高管理員進入管理專區
+            if ((viewId === 'admin-stores' || viewId === 'admin-members') && userRole !== 'admin') {
+                showToast('無最高管理員權限，拒絕存取', 'error'); return;
             }
 
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
@@ -768,7 +874,8 @@
             'STS': [{ id: 'STS_CENTER_TABLE', label: 'STS 中桌修繕' }, { id: 'OTHER', label: '其他' }]
         };
         const STATUS_MAP = {
-            'submitted': { label: '待處理', color: 'bg-red-50 text-red-600 border-red-200' },
+            'pending_samsung': { label: '待三星審核', color: 'bg-pink-50 text-pink-600 border-pink-200' },
+            'submitted': { label: '待派工', color: 'bg-red-50 text-red-600 border-red-200' },
             'assigned': { label: '已派工', color: 'bg-orange-50 text-orange-600 border-orange-200' },
             'in_progress': { label: '維修中', color: 'bg-blue-50 text-blue-600 border-blue-200' },
             'contractor_review': { label: '待卡爾吉特', color: 'bg-purple-50 text-purple-600 border-purple-200' },
@@ -788,16 +895,23 @@
                 
                 const adminArea = document.getElementById('prof-admin-area'); if(adminArea) adminArea.classList.toggle('hidden', userRole !== 'admin');
                 
+                // Hide analysis bottom nav for workers and store staff
                 const btnNavAnalysis = document.querySelector('.bottom-nav-item[data-target="analysis"]');
                 if (btnNavAnalysis) {
-                    if (userRole === 'worker') { btnNavAnalysis.classList.add('hidden'); btnNavAnalysis.classList.remove('flex'); } 
+                    if (userRole === 'worker' || userRole === 'store_staff') { btnNavAnalysis.classList.add('hidden'); btnNavAnalysis.classList.remove('flex'); } 
                     else { btnNavAnalysis.classList.remove('hidden'); btnNavAnalysis.classList.add('flex'); }
                 }
+
+                // Hide generate report and AI settings if not admin
+                const adminAiSettings = document.getElementById('ana-admin-ai-settings');
+                if (adminAiSettings) adminAiSettings.classList.toggle('hidden', userRole !== 'admin');
+                const adminGenerate = document.getElementById('ana-admin-generate');
+                if (adminGenerate) adminGenerate.classList.toggle('hidden', userRole !== 'admin');
 
                 if (isAuthorized) { loadStoresCache(); setupNotificationListener(); navigate('dashboard'); } 
                 else { navigate('pending'); }
             } else {
-                currentUser = null; userRole = null; 
+                currentUser = null; userRole = null; userStoreId = null;
                 document.getElementById('login-password').value = '';
                 navigate('login');
             }
@@ -805,24 +919,30 @@
 
         async function resolveUserRole(user) {
             if (user.email && user.email.toLowerCase() === 'mindnodeai@gmail.com') {
-                userRole = 'admin';
+                userRole = 'admin'; userStoreId = null;
                 try { await setDoc(doc(db, 'workspaces', WORKSPACE, 'members', user.uid), { role: 'admin', email: user.email, active: true, capabilities: ['storeAdmin'] }, {merge: true}); } catch(e) {}
                 return true; 
             }
             let isAuthorized = false;
             try {
                 const memberSnap = await getDoc(doc(db, 'workspaces', WORKSPACE, 'members', user.uid));
-                if (memberSnap.exists()) { const data = memberSnap.data(); userRole = data.role; isAuthorized = (data.active === true && !!data.role); } 
-                else { await setDoc(doc(db, 'workspaces', WORKSPACE, 'members', user.uid), { email: user.email, active: false, role: null, createdAt: serverTimestamp() }); }
+                if (memberSnap.exists()) { 
+                    const data = memberSnap.data(); 
+                    userRole = data.role; 
+                    userStoreId = data.storeId || null;
+                    isAuthorized = (data.active === true && !!data.role); 
+                } else { 
+                    await setDoc(doc(db, 'workspaces', WORKSPACE, 'members', user.uid), { email: user.email, active: false, role: null, createdAt: serverTimestamp() }); 
+                }
             } catch (e) {} return isAuthorized;
         }
 
-        function getRoleName(r) { return { 'admin': '最高管理員', 'samsung': '三星人員', 'calgit': '卡爾吉特', 'worker': '現場維護' }[r] || '未授權'; }
+        function getRoleName(r) { return { 'admin': '最高管理員', 'samsung': '三星人員', 'calgit': '卡爾吉特', 'worker': '現場維護', 'store_staff': '三星店家人員' }[r] || '未授權'; }
 
         document.getElementById('btn-toggle-password')?.addEventListener('click', () => {
             const pwdInput = document.getElementById('login-password'); const icon = document.getElementById('icon-toggle-password');
-            if (pwdInput.type === 'password') { pwdInput.type = 'text'; icon.classList.replace('fa-eye', 'fa-eye-slash'); icon.classList.add('text-blue-500'); } 
-            else { pwdInput.type = 'password'; icon.classList.replace('fa-eye-slash', 'fa-eye'); icon.classList.remove('text-blue-500');}
+            if (pwdInput.type === 'password') { pwdInput.type = 'text'; icon.classList.replace('fa-eye-slash', 'fa-eye'); icon.classList.add('text-blue-500'); } 
+            else { pwdInput.type = 'password'; icon.classList.replace('fa-eye', 'fa-eye-slash'); icon.classList.remove('text-blue-500');}
         });
 
         document.getElementById('btn-forgot-password')?.addEventListener('click', async () => {
@@ -834,7 +954,7 @@
             showLoader(false);
         });
 
-        document.getElementById('btn-login')?.addEventListener('click', async () => {
+        document.getElementById('btn-login-email')?.addEventListener('click', async () => {
             const email = document.getElementById('login-email').value.trim(); 
             const pwd = document.getElementById('login-password').value;
             if(!email || !pwd) return showToast('請輸入帳號與密碼', 'error');
@@ -842,29 +962,22 @@
             try { await signInWithEmailAndPassword(auth, email, pwd); } 
             catch (err) { 
                 if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
-                    showToast('登入失敗: 帳號或密碼錯誤。若您之前是用 Google 登入，請點擊下方按鈕', 'error'); 
-                } else {
-                    showToast('登入失敗，請稍後再試', 'error'); 
-                }
+                    showToast('登入失敗: 帳號或密碼錯誤。若您之前是用 Google 登入，請點擊下方按鈕。', 'error'); 
+                } else { showToast('登入失敗，請稍後再試', 'error'); }
             }
             showLoader(false);
         });
 
-        document.getElementById('btn-register')?.addEventListener('click', async () => {
+        document.getElementById('btn-register-email')?.addEventListener('click', async () => {
             const email = document.getElementById('login-email').value.trim(); 
             const pwd = document.getElementById('login-password').value;
             if(!email || !pwd) return showToast('請填寫 Email 與密碼以註冊', 'error');
             if(pwd.length < 6) return showToast('密碼至少需要 6 個字元', 'error');
             showLoader(true);
-            try { 
-                await createUserWithEmailAndPassword(auth, email, pwd); 
-                showToast('註冊成功！等待管理員審核。', 'success'); 
-            } catch (err) { 
-                if (err.code === 'auth/email-already-in-use') {
-                    showToast('此信箱已被註冊，請直接點擊「登入」', 'error');
-                } else {
-                    showToast('註冊失敗，請重試', 'error'); 
-                }
+            try { await createUserWithEmailAndPassword(auth, email, pwd); showToast('註冊成功！等待管理員審核。', 'success'); } 
+            catch (err) { 
+                if (err.code === 'auth/email-already-in-use') showToast('此信箱已被註冊，請直接點擊左側「登入」', 'error');
+                else showToast('註冊失敗，請重試', 'error'); 
             }
             showLoader(false);
         });
@@ -880,8 +993,7 @@
             if(activeTicketListener) { activeTicketListener(); activeTicketListener = null; }
             if(notificationListener) { notificationListener(); notificationListener = null; }
             if(reportsListener) { reportsListener(); reportsListener = null; }
-            try { await signOut(auth); showToast('已成功登出', 'success'); } 
-            catch (err) { showToast('登出失敗', 'error'); }
+            try { await signOut(auth); showToast('已成功登出', 'success'); } catch (err) { showToast('登出失敗', 'error'); }
             showLoader(false);
         };
         document.getElementById('btn-logout')?.addEventListener('click', doLogout);
@@ -891,18 +1003,11 @@
             btn.addEventListener('click', (e) => {
                 if(!currentUser) return;
                 document.querySelectorAll('.filter-btn').forEach(b => { 
-                    b.classList.replace('bg-blue-600', 'bg-white'); 
-                    b.classList.replace('text-white', 'text-slate-600'); 
-                    b.classList.replace('border-blue-600', 'border-slate-200');
-                    b.classList.remove('shadow-md', 'shadow-blue-500/20');
+                    b.classList.replace('bg-blue-600', 'bg-white'); b.classList.replace('text-white', 'text-slate-600'); b.classList.replace('border-blue-600', 'border-slate-200'); b.classList.remove('shadow-md', 'shadow-blue-500/20');
                 });
                 const t = e.currentTarget;
-                t.classList.replace('bg-white', 'bg-blue-600'); 
-                t.classList.replace('text-slate-600', 'text-white');
-                t.classList.replace('border-slate-200', 'border-blue-600');
-                t.classList.add('shadow-md', 'shadow-blue-500/20');
-                filters.status = t.dataset.filter; 
-                renderTicketsList();
+                t.classList.replace('bg-white', 'bg-blue-600'); t.classList.replace('text-slate-600', 'text-white'); t.classList.replace('border-slate-200', 'border-blue-600'); t.classList.add('shadow-md', 'shadow-blue-500/20');
+                filters.status = t.dataset.filter; renderTicketsList();
             });
         });
 
@@ -923,9 +1028,10 @@
                 let count = 0;
                 snapshot.forEach(doc => {
                     const t = doc.data();
-                    if (userRole === 'admin' || userRole === 'calgit') { if(['submitted','contractor_review'].includes(t.status)) count++; }
+                    if (userRole === 'admin') { if(['pending_samsung', 'submitted','contractor_review'].includes(t.status)) count++; }
+                    if (userRole === 'samsung') { if(['pending_samsung', 'samsung_review'].includes(t.status)) count++; }
+                    if (userRole === 'calgit') { if(['submitted','contractor_review'].includes(t.status)) count++; }
                     if (userRole === 'worker') { if(t.assignedUids && t.assignedUids.includes(currentUser.uid) && t.status === 'assigned') count++; }
-                    if (userRole === 'samsung') { if(t.status === 'samsung_review') count++; }
                 });
                 const badge = document.getElementById('badge-notifications');
                 if(!badge) return;
@@ -938,10 +1044,11 @@
             if(!Array.isArray(allTicketsCache) || !currentUser) return; 
             let baseTickets = [...allTicketsCache];
             if (userRole === 'worker') baseTickets = baseTickets.filter(t => (t.assignedUids || []).includes(currentUser.uid));
+            if (userRole === 'store_staff') baseTickets = baseTickets.filter(t => t.storeId === userStoreId);
             
             let counts = { pending: 0, active: 0, review: 0 };
             baseTickets.forEach(t => {
-                if (t.status === 'submitted') counts.pending++;
+                if (t.status === 'pending_samsung' || t.status === 'submitted') counts.pending++;
                 else if (t.status === 'assigned' || t.status === 'in_progress') counts.active++;
                 else if (t.status.includes('review')) counts.review++;
             });
@@ -981,7 +1088,9 @@
             let tickets = [...allTicketsCache];
 
             if (userRole === 'worker') tickets = tickets.filter(t => (t.assignedUids || []).includes(currentUser.uid));
-            if (filters.status === 'pending') tickets = tickets.filter(t => t.status === 'submitted');
+            if (userRole === 'store_staff') tickets = tickets.filter(t => t.storeId === userStoreId);
+            
+            if (filters.status === 'pending') tickets = tickets.filter(t => ['pending_samsung', 'submitted'].includes(t.status));
             if (filters.status === 'active') tickets = tickets.filter(t => ['assigned','in_progress'].includes(t.status));
             if (filters.status === 'review') tickets = tickets.filter(t => t.status.includes('review'));
             if (filters.status === 'closed') tickets = tickets.filter(t => t.status === 'closed');
@@ -1002,7 +1111,7 @@
                 if (t.createdAt?.toDate) dateStr = t.createdAt.toDate().toLocaleDateString('zh-TW', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
 
                 const card = document.createElement('div');
-                card.className = "bg-white p-5 rounded-3xl shadow-sm border border-slate-100 cursor-pointer relative overflow-hidden card-hover btn-press";
+                card.className = "bg-white p-5 rounded-3xl shadow-sm border border-slate-100 cursor-pointer relative overflow-hidden card-hover btn-press hover:-translate-y-1 hover:shadow-md transition-all";
                 card.onclick = () => viewTicketDetail(t.id);
                 const accentColor = statusUI.color.split(' ')[1].replace('text-', 'bg-');
                 
@@ -1096,7 +1205,6 @@
             if(targetTickets.length === 0) return showToast(`所選期間 (${timeLabel}) 內無案件可分析`, 'error');
 
             document.getElementById('modal-report').classList.remove('hidden'); const reportContent = document.getElementById('report-content');
-            reportContent.innerHTML = '<div class="text-center py-20"><div class="spinner inline-block w-10 h-10 border-[4px]"></div><p class="mt-6 text-sm font-bold text-slate-500 tracking-wider">正在運算數據與生成 AI 報告...</p></div>';
             document.getElementById('btn-download-word').classList.add('hidden'); document.getElementById('btn-save-report').classList.add('hidden');
 
             let excelData = [["案件編號", "建立時間", "門市類型", "門市名稱", "報修分類", "狀態", "摘要"]];
@@ -1104,21 +1212,28 @@
             targetTickets.forEach(t => {
                 const d = t.createdAt?.toDate ? t.createdAt.toDate().toLocaleString('zh-TW') : ''; const catName = getCategoryLabel(t.categoryCode, t.otherCategoryName); const statusName = STATUS_MAP[t.status]?.label || t.status;
                 excelData.push([t.id, d, t.channelType, t.storeSnapshot?.storeName || '', catName, statusName, (t.summary || '').replace(/\n/g, ' ')]);
-                if (t.status === 'closed') stats.closed++; else if (t.status === 'submitted') stats.pending++; else if (t.status.includes('review')) stats.review++; else stats.active++;
+                if (t.status === 'closed') stats.closed++; else if (t.status === 'pending_samsung' || t.status === 'submitted') stats.pending++; else if (t.status.includes('review')) stats.review++; else stats.active++;
                 stats.categories[catName] = (stats.categories[catName] || 0) + 1;
             });
             const btnExcel = document.getElementById('btn-download-excel');
             btnExcel.onclick = () => { try { const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(excelData), "案件報表"); XLSX.writeFile(wb, `報表_${timeLabel.replace(/ /g, '_')}.xlsx`); } catch(e) {} };
 
             if (!geminiApiKey) {
-                let html = `<h2>基礎統計報表 (${timeLabel})</h2><p><strong>總案件數：</strong> ${stats.total}</p><p><strong>已結案：</strong> ${stats.closed} | <strong>處理中：</strong> ${stats.active} | <strong>待驗收：</strong> ${stats.review} | <strong>待派工：</strong> ${stats.pending}</p><h3>類別分佈</h3><ul>`;
+                let html = `<h2>基礎統計報表 (${timeLabel})</h2><p><strong>總案件數：</strong> ${stats.total}</p><p><strong>已結案：</strong> ${stats.closed} | <strong>處理中：</strong> ${stats.active} | <strong>待驗收：</strong> ${stats.review} | <strong>待派工/立案：</strong> ${stats.pending}</p><h3>類別分佈</h3><ul>`;
                 for (let c in stats.categories) html += `<li>${c}：${stats.categories[c]} 件</li>`;
-                html += `</ul><div class="mt-8 bg-gradient-to-br from-purple-50 to-fuchsia-50 border border-purple-100 rounded-3xl p-8 text-center shadow-inner"><i class="fas fa-sparkles text-5xl text-purple-400 mb-5 block"></i><h4 class="font-extrabold text-purple-800 mb-3 text-xl">解鎖 AI 深度洞察與專業圖表</h4><p class="text-sm text-purple-600 mb-6 font-medium">取得免費的 Gemini API Key，即可由 AI 自動為您撰寫專業營運報告並生成視覺化圓餅圖。</p><a href="https://aistudio.google.com/app/apikey" target="_blank" class="btn-press inline-block bg-purple-600 text-white text-base font-bold px-8 py-4 rounded-xl shadow-lg hover:bg-purple-700 transition-colors">前往免費申請 Key</a></div>`;
+                html += `</ul>
+                <div class="mt-8 bg-gradient-to-br from-purple-50 to-fuchsia-50 border border-purple-100 rounded-3xl p-8 text-center shadow-inner">
+                    <i class="fas fa-sparkles text-5xl text-purple-400 mb-5 block"></i>
+                    <h4 class="font-extrabold text-purple-800 mb-3 text-xl">解鎖 AI 深度洞察與專業圖表</h4>
+                    <p class="text-sm text-purple-600 mb-6 font-medium leading-relaxed">請在設定中填入您的 Gemini API Key，即可由 AI 自動為您撰寫專業營運報告，並生成視覺化圓餅圖。</p>
+                </div>`;
                 reportContent.innerHTML = html; btnExcel.classList.remove('hidden'); return;
             }
 
+            reportContent.innerHTML = '<div class="text-center py-20"><div class="spinner inline-block w-10 h-10 border-[4px] border-slate-100 border-t-purple-500"></div><p class="mt-6 text-sm font-bold text-slate-500 tracking-wider">正在運算數據與生成 AI 報告...</p></div>';
+
             try {
-                const prompt = `時間範圍：${timeLabel}，總計：${stats.total}件 (已結案${stats.closed}, 處理中${stats.active}, 待驗收${stats.review}, 待派工${stats.pending})。類別：${JSON.stringify(stats.categories)}。請撰寫營運洞察報告，以繁體中文專業語氣，並必須包含一個 Markdown 格式的 Mermaid pie chart 顯示類別佔比。`;
+                const prompt = `時間範圍：${timeLabel}，總計：${stats.total}件 (已結案${stats.closed}, 處理中${stats.active}, 待驗收${stats.review}, 待派工/立案${stats.pending})。類別：${JSON.stringify(stats.categories)}。請撰寫營運洞察報告，以繁體中文專業語氣，並必須包含一個 Markdown 格式的 Mermaid pie chart 顯示類別佔比。`;
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, { method: 'POST', body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] }) });
                 if(!res.ok) throw new Error("API請求失敗");
                 const aiResponse = (await res.json()).candidates?.[0]?.content?.parts?.[0]?.text || '無回覆';
@@ -1155,7 +1270,7 @@
                         </div>
                         <div class="flex gap-2 items-center">
                             <button onclick="viewHistoricalReport('${doc.id}')" class="btn-press text-blue-600 w-10 h-10 bg-blue-50 rounded-xl font-bold flex items-center justify-center hover:bg-blue-100 transition-colors"><i class="fas fa-eye"></i></button>
-                            ${(userRole === 'admin' || userRole === 'samsung' || userRole === 'calgit') ? `<button onclick="window.promptDeleteReport('${doc.id}', '${data.timeLabel}')" class="btn-press text-red-500 w-10 h-10 bg-red-50 rounded-xl font-bold flex items-center justify-center hover:bg-red-100 transition-colors"><i class="fas fa-trash-alt"></i></button>` : ''}
+                            ${(userRole === 'admin') ? `<button onclick="window.promptDeleteReport('${doc.id}', '${data.timeLabel}')" class="btn-press text-red-500 w-10 h-10 bg-red-50 rounded-xl font-bold flex items-center justify-center hover:bg-red-100 transition-colors"><i class="fas fa-trash-alt"></i></button>` : ''}
                         </div>
                     </div>`;
                 });
@@ -1186,6 +1301,17 @@
             document.getElementById('form-new-ticket')?.reset();
             if(storeSelect) storeSelect.disabled = true; if(catSelect) catSelect.disabled = true; if(otherContainer) otherContainer.classList.add('hidden');
             const preview = document.getElementById('nt-photo-preview'); if(preview) preview.innerHTML = '';
+            
+            if (userRole === 'store_staff' && userStoreId) {
+                const s = storesCache.find(x => x.id === userStoreId);
+                if (s) {
+                    channelSelect.value = s.channelType;
+                    renderStoreDropdown(s.channelType);
+                    storeSelect.value = userStoreId;
+                    catSelect.innerHTML = '<option value="">請選擇報修項目</option>'; CATEGORIES[s.channelType].forEach(c => catSelect.innerHTML += `<option value="${c.id}">${c.label}</option>`); catSelect.disabled = false;
+                }
+            }
+
             channelSelect.onchange = (e) => {
                 const val = e.target.value; if (!val) { storeSelect.disabled = true; catSelect.disabled = true; return; }
                 renderStoreDropdown(val); catSelect.innerHTML = '<option value="">請選擇報修項目</option>'; CATEGORIES[val].forEach(c => catSelect.innerHTML += `<option value="${c.id}">${c.label}</option>`); catSelect.disabled = false;
@@ -1198,7 +1324,9 @@
 
         function renderStoreDropdown(channelType) {
             const select = document.getElementById('nt-store'); if(!select) return; select.innerHTML = '<option value="">請選擇門市</option>';
-            const filtered = storesCache.filter(s => s.channelType === channelType);
+            let filtered = storesCache.filter(s => s.channelType === channelType);
+            if (userRole === 'store_staff') filtered = filtered.filter(s => s.id === userStoreId);
+            
             if (filtered.length === 0) { select.innerHTML = '<option value="">無可用門市，請聯絡管理員</option>'; select.disabled = true; } else { filtered.forEach(s => select.innerHTML += `<option value="${s.id}">${s.storeCode} - ${s.storeName}</option>`); select.disabled = false; }
         }
 
@@ -1218,6 +1346,7 @@
                 reader.onerror = () => reject(new Error('讀取失敗')); reader.readAsDataURL(file);
             });
         }
+        
         document.getElementById('nt-photos')?.addEventListener('change', (e) => {
             const files = Array.from(e.target.files).slice(0, 10); const container = document.getElementById('nt-photo-preview'); container.innerHTML = '';
             files.forEach(f => container.innerHTML += `<div class="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-200 shadow-sm"><img src="${URL.createObjectURL(f)}" class="w-full h-full object-cover"></div>`);
@@ -1231,7 +1360,7 @@
                 const ticketRef = await addDoc(collection(db, 'workspaces', WORKSPACE, 'tickets'), {
                     channelType: document.getElementById('nt-channel').value, storeId, categoryCode: document.getElementById('nt-category').value, storeSnapshot: { storeCode: store.storeCode, storeName: store.storeName, region: store.region, address: store.address },
                     otherCategoryName: document.getElementById('nt-category').value === 'OTHER' ? document.getElementById('nt-other-name').value.trim() : null, summary: document.getElementById('nt-description').value.trim().substring(0, 100), description: document.getElementById('nt-description').value.trim(),
-                    status: 'submitted', assignedUids: [], reporterUid: currentUser.uid, createdAt: serverTimestamp()
+                    status: 'pending_samsung', assignedUids: [], reporterUid: currentUser.uid, createdAt: serverTimestamp()
                 });
                 await addDoc(collection(db, 'workspaces', WORKSPACE, 'tickets', ticketRef.id, 'events'), { action: 'created', actorUid: currentUser.uid, serverTime: serverTimestamp() });
                 const files = document.getElementById('nt-photos').files;
@@ -1242,7 +1371,7 @@
                         await uploadBytesResumable(sRef, blob); await addDoc(collection(db, 'workspaces', WORKSPACE, 'attachments'), { ticketId: ticketRef.id, storagePath: sRef.fullPath, downloadUrl: await getDownloadURL(sRef), uploadedBy: currentUser.uid, createdAt: serverTimestamp() });
                     }
                 }
-                showToast('報修成功！', 'success'); navigate('dashboard');
+                showToast('報修已送出，等待三星立案審核！', 'success'); navigate('dashboard');
             } catch (err) { showToast('失敗: ' + err.message, 'error'); }
             showLoader(false);
         });
@@ -1283,10 +1412,18 @@
             try {
                 onSnapshot(query(collection(db, 'workspaces', WORKSPACE, 'tickets', ticketId, 'events'), orderBy('serverTime', 'asc')), (snaps) => {
                     const events = []; snaps.forEach(doc => events.push(doc.data()));
-                    const statusProgress = { 'submitted':1, 'assigned':2, 'in_progress':3, 'contractor_review':4, 'samsung_review':5, 'closed':6, 'cancelled':-1 };
+                    const statusProgress = { 'pending_samsung':1, 'submitted':2, 'assigned':3, 'in_progress':4, 'contractor_review':5, 'samsung_review':6, 'closed':7, 'cancelled':-1 };
                     const currentLevel = statusProgress[currentTicketData.status] || 0;
-                    const flowSteps = [ { action: 'created', label: '建立報修' }, { action: 'assigned', label: '卡爾吉特派工' }, { action: 'arrived', label: '維護人員到場' }, { action: 'completed', label: '提交完工' }, { action: 'calgit_approved', label: '卡爾吉特通過' }, { action: 'samsung_approved', label: '三星驗收結案' } ];
-                    container.innerHTML = ''; if (currentTicketData.status === 'cancelled') return container.innerHTML = '<div class="text-red-500 text-sm font-bold bg-red-50 p-5 rounded-3xl border border-red-100 flex items-center shadow-inner"><i class="fas fa-ban mr-3 text-2xl"></i>此案件已由管理員作廢取消</div>';
+                    const flowSteps = [ 
+                        { action: 'created', label: '店家提出報修需求' }, 
+                        { action: 'samsung_verified', label: '三星審核報修需求' }, 
+                        { action: 'assigned', label: '卡爾吉特派工' }, 
+                        { action: 'arrived', label: '維護人員到場' }, 
+                        { action: 'completed', label: '提交完工' }, 
+                        { action: 'calgit_approved', label: '卡爾吉特審核' }, 
+                        { action: 'samsung_approved', label: '三星驗收結案' } 
+                    ];
+                    container.innerHTML = ''; if (currentTicketData.status === 'cancelled') return container.innerHTML = '<div class="text-red-500 text-sm font-bold bg-red-50 p-5 rounded-3xl border border-red-100 flex items-center shadow-inner"><i class="fas fa-ban mr-3 text-2xl"></i>此案件已被退回或強制作廢取消</div>';
                     flowSteps.forEach((step, index) => {
                         const matchingEvents = events.filter(e => e.action === step.action);
                         const isCompleted = index < currentLevel; const isNextLineCompleted = (index + 1) < currentLevel;
@@ -1299,9 +1436,10 @@
                             html += `<div class="text-[10px] text-slate-400 mt-1 font-bold tracking-wider">${evtTime}</div>`;
                             if (evt.note) html += `<div class="mt-2.5 text-xs text-slate-700 bg-slate-50 p-4 rounded-2xl border border-slate-100 leading-relaxed font-medium">${evt.note}</div>`;
                         });
-                        if (index === 2) events.filter(e => e.action === 'pause_requested').forEach(evt => html += `<div class="mt-2.5 text-xs text-orange-700 bg-orange-50 p-4 rounded-2xl border border-orange-100 font-medium"><i class="fas fa-pause-circle mr-1.5 text-lg align-middle"></i>暫停/待料<br><span class="mt-1.5 block opacity-80 leading-relaxed">${evt.note}</span></div>`);
-                        if (index === 3) events.filter(e => e.action === 'contractor_rejected').forEach(evt => html += `<div class="mt-2.5 text-xs text-red-600 bg-red-50 p-4 rounded-2xl border border-red-100 font-medium"><i class="fas fa-undo-alt mr-1.5 text-lg align-middle"></i>卡爾吉特退回<br><span class="mt-1.5 block opacity-80 leading-relaxed">${evt.note}</span></div>`);
-                        if (index === 4) events.filter(e => e.action === 'samsung_rejected').forEach(evt => html += `<div class="mt-2.5 text-xs text-red-600 bg-red-50 p-4 rounded-2xl border border-red-100 font-medium"><i class="fas fa-undo-alt mr-1.5 text-lg align-middle"></i>三星退回<br><span class="mt-1.5 block opacity-80 leading-relaxed">${evt.note}</span></div>`);
+                        if (index === 1) events.filter(e => e.action === 'samsung_rejected_creation').forEach(evt => html += `<div class="mt-2.5 text-xs text-red-600 bg-red-50 p-4 rounded-2xl border border-red-100 font-medium"><i class="fas fa-undo-alt mr-1.5 text-lg align-middle"></i>三星退回報修<br><span class="mt-1.5 block opacity-80 leading-relaxed">${evt.note}</span></div>`);
+                        if (index === 3) events.filter(e => e.action === 'pause_requested').forEach(evt => html += `<div class="mt-2.5 text-xs text-orange-700 bg-orange-50 p-4 rounded-2xl border border-orange-100 font-medium"><i class="fas fa-pause-circle mr-1.5 text-lg align-middle"></i>暫停/待料<br><span class="mt-1.5 block opacity-80 leading-relaxed">${evt.note}</span></div>`);
+                        if (index === 4) events.filter(e => e.action === 'contractor_rejected').forEach(evt => html += `<div class="mt-2.5 text-xs text-red-600 bg-red-50 p-4 rounded-2xl border border-red-100 font-medium"><i class="fas fa-undo-alt mr-1.5 text-lg align-middle"></i>卡爾吉特退回<br><span class="mt-1.5 block opacity-80 leading-relaxed">${evt.note}</span></div>`);
+                        if (index === 5) events.filter(e => e.action === 'samsung_rejected_final').forEach(evt => html += `<div class="mt-2.5 text-xs text-red-600 bg-red-50 p-4 rounded-2xl border border-red-100 font-medium"><i class="fas fa-undo-alt mr-1.5 text-lg align-middle"></i>三星驗收退回<br><span class="mt-1.5 block opacity-80 leading-relaxed">${evt.note}</span></div>`);
                         html += `</div></div>`; container.innerHTML += html;
                     });
                 });
@@ -1311,16 +1449,21 @@
         function renderTicketActions(ticket) {
             const area = document.getElementById('td-actions-area'); const container = document.getElementById('td-dynamic-actions');
             container.innerHTML = ''; area.classList.add('hidden'); const s = ticket.status;
+            
+            if (userRole === 'samsung' || userRole === 'admin') {
+                if (s === 'pending_samsung') { area.classList.remove('hidden'); container.innerHTML = `<div class="flex gap-3"><button onclick="updateTicketStatus('submitted', 'samsung_verified', '同意，交由卡爾吉特派工')" class="btn-press flex-1 bg-blue-600 text-white rounded-xl py-4 font-bold shadow-lg shadow-blue-600/20 text-sm transition-colors hover:bg-blue-700">同意 (交由卡爾吉特派工)</button><button onclick="promptReject('samsung_rejected_creation')" class="btn-press flex-1 bg-red-50 text-red-600 rounded-xl py-4 font-bold border border-red-200 text-sm hover:bg-red-100 transition-colors">退回 (退回給店家)</button></div>`; }
+            }
+
             if (userRole === 'worker' && ticket.assignedUids.includes(currentUser.uid)) {
-                if (s === 'assigned') { area.classList.remove('hidden'); container.innerHTML = `<button onclick="updateTicketStatus('in_progress', 'arrived', '人員已到場')" class="btn-press w-full bg-blue-600 text-white rounded-xl py-4 font-bold shadow-lg shadow-blue-600/20 text-sm">回報抵達現場</button>`; } 
-                else if (s === 'in_progress') { area.classList.remove('hidden'); container.innerHTML = `<button onclick="promptCompleteTicket()" class="btn-press w-full bg-green-600 text-white rounded-xl py-4 font-bold mb-3 shadow-lg shadow-green-600/20 text-sm">提交完工紀錄</button><button onclick="promptPause()" class="btn-press w-full bg-orange-50 text-orange-600 border border-orange-200 rounded-xl py-3.5 font-bold text-sm">回報暫停 / 待料</button>`; }
+                if (s === 'assigned') { area.classList.remove('hidden'); container.innerHTML = `<button onclick="updateTicketStatus('in_progress', 'arrived', '人員已到場')" class="btn-press w-full bg-blue-600 text-white rounded-xl py-4 font-bold shadow-lg shadow-blue-600/20 text-sm transition-colors hover:bg-blue-700">回報抵達現場</button>`; } 
+                else if (s === 'in_progress') { area.classList.remove('hidden'); container.innerHTML = `<button onclick="promptCompleteTicket()" class="btn-press w-full bg-green-600 text-white rounded-xl py-4 font-bold mb-3 shadow-lg shadow-green-600/20 text-sm transition-colors hover:bg-green-700">提交完工紀錄</button><button onclick="promptPause()" class="btn-press w-full bg-orange-50 text-orange-600 border border-orange-200 rounded-xl py-3.5 font-bold text-sm transition-colors hover:bg-orange-100">回報暫停 / 待料</button>`; }
             }
             if (userRole === 'calgit' || userRole === 'admin') {
-                if (s === 'submitted') { area.classList.remove('hidden'); container.innerHTML = `<button onclick="promptAssign()" class="btn-press w-full bg-orange-500 text-white rounded-xl py-4 font-bold shadow-lg shadow-orange-500/20 text-sm">指派現場維護人員</button>`; } 
-                else if (s === 'contractor_review') { area.classList.remove('hidden'); container.innerHTML = `<div class="flex gap-3"><button onclick="updateTicketStatus('samsung_review', 'calgit_approved', '檢查通過')" class="btn-press flex-1 bg-green-600 text-white rounded-xl py-4 font-bold shadow-lg shadow-green-600/20 text-sm">通過送三星</button><button onclick="promptReject('contractor_rejected')" class="btn-press flex-1 bg-red-50 text-red-600 rounded-xl py-4 font-bold border border-red-200 text-sm hover:bg-red-100 transition-colors">退回工班</button></div>`; }
+                if (s === 'submitted') { area.classList.remove('hidden'); container.innerHTML = `<button onclick="promptAssign()" class="btn-press w-full bg-orange-500 text-white rounded-xl py-4 font-bold shadow-lg shadow-orange-500/20 text-sm transition-colors hover:bg-orange-600">指派現場維護人員</button>`; } 
+                else if (s === 'contractor_review') { area.classList.remove('hidden'); container.innerHTML = `<div class="flex gap-3"><button onclick="updateTicketStatus('samsung_review', 'calgit_approved', '檢查通過')" class="btn-press flex-1 bg-green-600 text-white rounded-xl py-4 font-bold shadow-lg shadow-green-600/20 text-sm transition-colors hover:bg-green-700">通過送三星</button><button onclick="promptReject('contractor_rejected')" class="btn-press flex-1 bg-red-50 text-red-600 rounded-xl py-4 font-bold border border-red-200 text-sm hover:bg-red-100 transition-colors">退回工班</button></div>`; }
             }
             if (userRole === 'samsung' || userRole === 'admin') {
-                if (s === 'samsung_review') { area.classList.remove('hidden'); container.innerHTML = `<div class="flex gap-3"><button onclick="updateTicketStatus('closed', 'samsung_approved', '同意結案')" class="btn-press flex-1 bg-indigo-600 text-white rounded-xl py-4 font-bold shadow-lg shadow-indigo-600/20 text-sm">同意結案</button><button onclick="promptReject('samsung_rejected')" class="btn-press flex-1 bg-red-50 text-red-600 rounded-xl py-4 font-bold border border-red-200 text-sm hover:bg-red-100 transition-colors">退回</button></div>`; }
+                if (s === 'samsung_review') { area.classList.remove('hidden'); container.innerHTML = `<div class="flex gap-3"><button onclick="updateTicketStatus('closed', 'samsung_approved', '同意結案')" class="btn-press flex-1 bg-indigo-600 text-white rounded-xl py-4 font-bold shadow-lg shadow-indigo-600/20 text-sm transition-colors hover:bg-indigo-700">同意結案</button><button onclick="promptReject('samsung_rejected_final')" class="btn-press flex-1 bg-red-50 text-red-600 rounded-xl py-4 font-bold border border-red-200 text-sm hover:bg-red-100 transition-colors">退回</button></div>`; }
             }
             
             if (userRole === 'admin') {
@@ -1344,6 +1487,7 @@
             try { const snaps = await getDocs(query(collection(db, 'workspaces', WORKSPACE, 'members'), where('role', '==', 'worker'), where('active', '==', true))); select.innerHTML = '<option value="">-- 請選擇現場工班 --</option>'; if (snaps.empty) return select.innerHTML = '<option value="">目前無可用的工班</option>'; snaps.forEach(doc => select.innerHTML += `<option value="${doc.id}">${doc.data().email}</option>`); } 
             catch(e) { select.innerHTML = '<option value="">名單讀取失敗</option>'; }
         };
+        
         document.getElementById('btn-submit-assign')?.addEventListener('click', async () => {
             const workerUid = document.getElementById('ma-worker-select').value; if (!workerUid) return showToast('請選擇派工對象', 'error');
             showLoader(true);
@@ -1364,6 +1508,7 @@
             const files = Array.from(e.target.files).slice(0,10); const c = document.getElementById('mc-photo-preview'); c.innerHTML = '';
             files.forEach(f => c.innerHTML += `<div class="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-200 shadow-sm"><img src="${URL.createObjectURL(f)}" class="w-full h-full object-cover"></div>`);
         });
+        
         document.getElementById('btn-submit-completion')?.addEventListener('click', async () => {
             const note = document.getElementById('mc-note').value.trim(); const files = document.getElementById('mc-photos').files; if (!note || files.length===0) return showToast('請填寫說明並上傳施工照片', 'error');
             showLoader(true);
@@ -1381,9 +1526,15 @@
 
         let currentRejectAction = null;
         window.promptReject = function(actionType) { currentRejectAction = actionType; document.getElementById('mr-reason').value = ''; document.getElementById('modal-reject').classList.remove('hidden'); };
+        
         document.getElementById('btn-submit-reject')?.addEventListener('click', async () => {
             const reason = document.getElementById('mr-reason').value.trim(); if (!reason) return showToast('請說明退回原因', 'error');
-            closeModal('modal-reject'); await updateTicketStatus('in_progress', currentRejectAction, reason);
+            closeModal('modal-reject'); 
+            if (currentRejectAction === 'samsung_rejected_creation') {
+                await updateTicketStatus('cancelled', 'samsung_rejected_creation', reason);
+            } else {
+                await updateTicketStatus('in_progress', currentRejectAction, reason);
+            }
         });
 
         window.promptCancelTicket = function() {
@@ -1391,6 +1542,7 @@
                 await updateTicketStatus('cancelled', 'cancelled', '最高管理員強制作廢取消'); navigate('dashboard');
             });
         };
+        
         window.promptDeleteTicket = function() {
             window.openConfirmModal('永久刪除案件？', '嚴重警告：此操作將從雲端資料庫中徹底根除此案件，無法復原！', async () => {
                 showLoader(true);
@@ -1405,16 +1557,48 @@
                 onSnapshot(query(collection(db, 'workspaces', WORKSPACE, 'stores')), (snapshot) => {
                     storesCache = []; snapshot.forEach(doc => storesCache.push({ id: doc.id, ...doc.data() }));
                     if (currentView === 'new-ticket') { const type = document.getElementById('nt-channel').value; if(type) renderStoreDropdown(type); }
+                    if (currentView === 'admin-members') { loadAdminMembers(); } 
                 }, () => {});
             } catch (e) {}
         }
         
+        document.getElementById('as-photo')?.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            const preview = document.getElementById('as-photo-preview');
+            if (file) {
+                preview.innerHTML = `<img src="${URL.createObjectURL(file)}" class="w-full h-32 object-cover rounded-xl mt-2 border border-slate-200">`;
+                preview.classList.remove('hidden');
+            } else {
+                preview.innerHTML = ''; preview.classList.add('hidden');
+            }
+        });
+
         document.getElementById('form-new-store')?.addEventListener('submit', async (e) => {
             e.preventDefault(); if(userRole !== 'admin' && userRole !== 'calgit') return showToast('無權限', 'error');
-            const data = { storeCode: document.getElementById('as-code').value.trim().toUpperCase(), channelType: document.getElementById('as-type').value, storeName: document.getElementById('as-name').value.trim(), region: document.getElementById('as-region').value.trim(), address: document.getElementById('as-address').value.trim(), active: true, createdAt: serverTimestamp(), createdBy: currentUser.uid };
+            
+            const btn = e.target.querySelector('button[type="submit"]');
+            const origHtml = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>處理中...'; btn.disabled = true;
             showLoader(true);
-            try { await addDoc(collection(db, 'workspaces', WORKSPACE, 'stores'), data); showToast('店家建檔成功', 'success'); e.target.reset(); } catch(err) { showToast('新增失敗', 'error'); }
-            showLoader(false);
+
+            try {
+                const docRef = await addDoc(collection(db, 'workspaces', WORKSPACE, 'stores'), { 
+                    storeCode: document.getElementById('as-code').value.trim().toUpperCase(), 
+                    channelType: document.getElementById('as-type').value, 
+                    storeName: document.getElementById('as-name').value.trim(), 
+                    storeGrade: document.getElementById('as-grade').value.trim(),
+                    region: document.getElementById('as-region').value.trim(), 
+                    address: document.getElementById('as-address').value.trim(), 
+                    active: true, createdAt: serverTimestamp(), createdBy: currentUser.uid 
+                });
+                const file = document.getElementById('as-photo').files[0];
+                if (file) {
+                    const blob = await compressImage(file); const sRef = ref(storage, `workspaces/${WORKSPACE}/stores/${docRef.id}.jpg`);
+                    await uploadBytesResumable(sRef, blob); await updateDoc(docRef, { photoUrl: await getDownloadURL(sRef) });
+                }
+                showToast('單一店家建檔成功', 'success'); e.target.reset(); document.getElementById('as-photo-preview').classList.add('hidden');
+            } catch(err) { showToast('新增失敗', 'error'); }
+            
+            btn.innerHTML = origHtml; btn.disabled = false; showLoader(false);
         });
 
         window.promptEditStore = function(id) {
@@ -1423,6 +1607,7 @@
             document.getElementById('es-code').value = store.storeCode;
             document.getElementById('es-type').value = store.channelType;
             document.getElementById('es-name').value = store.storeName;
+            document.getElementById('es-grade').value = store.storeGrade || '';
             document.getElementById('es-region').value = store.region;
             document.getElementById('es-address').value = store.address;
             document.getElementById('modal-edit-store').classList.remove('hidden');
@@ -1430,7 +1615,7 @@
 
         document.getElementById('btn-submit-edit-store')?.addEventListener('click', async () => {
             const id = document.getElementById('es-id').value;
-            const data = { storeCode: document.getElementById('es-code').value.trim().toUpperCase(), channelType: document.getElementById('es-type').value, storeName: document.getElementById('es-name').value.trim(), region: document.getElementById('es-region').value.trim(), address: document.getElementById('es-address').value.trim(), updatedAt: serverTimestamp() };
+            const data = { storeCode: document.getElementById('es-code').value.trim().toUpperCase(), channelType: document.getElementById('es-type').value, storeName: document.getElementById('es-name').value.trim(), storeGrade: document.getElementById('es-grade').value.trim(), region: document.getElementById('es-region').value.trim(), address: document.getElementById('es-address').value.trim(), updatedAt: serverTimestamp() };
             if(!data.storeCode || !data.storeName || !data.region || !data.address) return showToast('請填寫完整資訊', 'error');
             showLoader(true);
             try { await updateDoc(doc(db, 'workspaces', WORKSPACE, 'stores', id), data); showToast('修改成功', 'success'); closeModal('modal-edit-store'); } catch(e) { showToast('修改失敗', 'error'); }
@@ -1447,7 +1632,7 @@
 
         function loadAdminStores() {
             const list = document.getElementById('admin-stores-list'); if(!list) return;
-            list.innerHTML = '<div class="text-center py-10"><div class="spinner inline-block"></div></div>';
+            list.innerHTML = '<div class="text-center py-10"><div class="spinner inline-block border-t-blue-600"></div></div>';
             
             onSnapshot(query(collection(db, 'workspaces', WORKSPACE, 'stores'), orderBy('createdAt', 'desc')), (snapshot) => {
                 list.innerHTML = ''; 
@@ -1458,16 +1643,23 @@
                     const div = document.createElement('div'); 
                     div.className = `p-6 rounded-3xl shadow-sm border ${data.active ? 'bg-white border-slate-100' : 'bg-slate-50 border-slate-200 opacity-80'}`;
                     
+                    const photoHtml = data.photoUrl 
+                        ? `<img src="${data.photoUrl}" class="w-14 h-14 rounded-xl object-cover shadow-sm border border-slate-100 flex-shrink-0">` 
+                        : `<div class="w-14 h-14 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center border border-slate-200 flex-shrink-0"><i class="fas fa-store text-xl"></i></div>`;
+
                     div.innerHTML = `
                     <div class="flex flex-col gap-4">
                         <div class="flex justify-between items-start">
-                            <div>
-                                <div class="font-extrabold text-sm text-slate-800"><span class="text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded text-xs mr-2">${data.channelType}</span>${data.storeCode} - ${data.storeName}</div>
-                                <div class="text-xs text-slate-500 mt-2 font-medium"><i class="fas fa-map-marker-alt text-slate-300 mr-1.5"></i>${data.region} ${data.address}</div>
+                            <div class="flex gap-3">
+                                ${photoHtml}
+                                <div>
+                                    <div class="font-extrabold text-sm text-slate-800"><span class="text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded text-xs mr-2 font-bold">${data.channelType}</span>${data.storeGrade ? `<span class="text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded text-xs mr-2 font-bold">${data.storeGrade}</span>` : ''}${data.storeCode} - ${data.storeName}</div>
+                                    <div class="text-xs text-slate-500 mt-2 font-medium"><i class="fas fa-map-marker-alt text-slate-300 mr-1.5"></i>${data.region} ${data.address}</div>
+                                </div>
                             </div>
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold border shadow-sm ${data.active ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200'}">${data.active ? '營運中' : '已停用'}</span>
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold border shadow-sm flex-shrink-0 ml-2 ${data.active ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200'}">${data.active ? '營運中' : '已停用'}</span>
                         </div>
-                        <div class="flex gap-2 mt-1 pt-4 border-t border-slate-100">
+                        <div class="flex gap-2 mt-2 pt-4 border-t border-slate-100">
                             <button class="btn-press flex-1 text-xs py-2.5 rounded-xl font-bold transition-colors ${data.active ? 'text-orange-600 bg-orange-50 hover:bg-orange-100' : 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100'}" onclick="toggleStoreStatus('${docSnap.id}', ${data.active})">${data.active ? '停用此店' : '重新啟用'}</button>
                             <button class="btn-press flex-1 text-xs py-2.5 rounded-xl font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors" onclick="window.promptEditStore('${docSnap.id}')">修改資料</button>
                             <button class="btn-press w-12 text-xs py-2.5 rounded-xl font-bold bg-red-50 text-red-500 hover:bg-red-100 transition-colors flex justify-center items-center" onclick="window.promptDeleteStore('${docSnap.id}', '${data.storeName}')"><i class="fas fa-trash-alt text-sm"></i></button>
@@ -1495,17 +1687,29 @@
             });
         });
         
+        window.toggleStoreSelect = function(uid) {
+            const role = document.getElementById(`role-sel-${uid}`).value;
+            const container = document.getElementById(`store-container-${uid}`);
+            if (role === 'store_staff') { container.classList.remove('hidden'); container.classList.add('flex'); } 
+            else { container.classList.add('hidden'); container.classList.remove('flex'); }
+        };
+
         function loadAdminMembers() {
             if(userRole !== 'admin') return; const list = document.getElementById('admin-members-list'); if(!list) return;
-            list.innerHTML = '<div class="text-center py-10"><div class="spinner inline-block"></div></div>';
+            
+            const storeOptions = `<option value="">-- 請選擇綁定門市 --</option>` + storesCache.map(s => `<option value="${s.id}">${s.storeCode} - ${s.storeName}</option>`).join('');
+
             onSnapshot(query(collection(db, 'workspaces', WORKSPACE, 'members')), (snapshot) => {
                 list.innerHTML = ''; let members = []; snapshot.forEach(doc => members.push({ uid: doc.id, ...doc.data() }));
                 members.sort((a, b) => { if (a.active !== b.active) return a.active ? 1 : -1; return (a.email || '').localeCompare(b.email || ''); });
                 if(memberFilter === 'pending') members = members.filter(m => !m.active || !m.role);
                 if(memberFilter === 'active') members = members.filter(m => m.active && m.role);
                 if (members.length === 0) return list.innerHTML = '<div class="text-center text-slate-400 py-10"><i class="fas fa-users-slash text-4xl mb-3 opacity-50"></i><p class="text-sm font-bold">無符合的人員資料</p></div>';
+                
                 members.forEach(m => {
                     const isSelf = (m.uid === currentUser.uid);
+                    const memberStoreOptions = `<option value="">-- 請選擇綁定門市 --</option>` + storesCache.map(s => `<option value="${s.id}" ${m.storeId === s.id ? 'selected' : ''}>${s.storeCode} - ${s.storeName}</option>`).join('');
+                    
                     list.innerHTML += `
                         <div class="p-6 rounded-3xl shadow-sm border ${m.active ? 'bg-white border-slate-100' : 'bg-orange-50/50 border-orange-100'}">
                             <div class="flex justify-between items-start mb-5">
@@ -1514,8 +1718,19 @@
                             </div>
                             <div class="space-y-3">
                                 <div class="flex items-center gap-3"><label class="text-xs font-bold text-slate-400 w-8">角色</label>
-                                    <select id="role-sel-${m.uid}" class="flex-1 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-slate-50 focus:bg-white font-bold text-slate-700 transition-all" ${isSelf ? 'disabled' : ''}>
-                                        <option value="" ${!m.role ? 'selected' : ''}>-- 選擇角色 --</option><option value="admin" ${m.role === 'admin' ? 'selected' : ''}>最高管理員</option><option value="samsung" ${m.role === 'samsung' ? 'selected' : ''}>三星人員</option><option value="calgit" ${m.role === 'calgit' ? 'selected' : ''}>卡爾吉特</option><option value="worker" ${m.role === 'worker' ? 'selected' : ''}>現場工班</option>
+                                    <select id="role-sel-${m.uid}" onchange="toggleStoreSelect('${m.uid}')" class="flex-1 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-slate-50 focus:bg-white font-bold text-slate-700 transition-all" ${isSelf ? 'disabled' : ''}>
+                                        <option value="" ${!m.role ? 'selected' : ''}>-- 選擇角色 --</option>
+                                        <option value="admin" ${m.role === 'admin' ? 'selected' : ''}>最高管理員</option>
+                                        <option value="samsung" ${m.role === 'samsung' ? 'selected' : ''}>三星人員</option>
+                                        <option value="calgit" ${m.role === 'calgit' ? 'selected' : ''}>卡爾吉特</option>
+                                        <option value="store_staff" ${m.role === 'store_staff' ? 'selected' : ''}>三星店家人員</option>
+                                        <option value="worker" ${m.role === 'worker' ? 'selected' : ''}>現場工班</option>
+                                    </select>
+                                </div>
+                                <div id="store-container-${m.uid}" class="${m.role === 'store_staff' ? 'flex' : 'hidden'} items-center gap-3 transition-all">
+                                    <label class="text-xs font-bold text-slate-400 w-8">門市</label>
+                                    <select id="store-sel-${m.uid}" class="flex-1 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none bg-purple-50 focus:bg-white font-bold text-purple-700 transition-all" ${isSelf ? 'disabled' : ''}>
+                                        ${memberStoreOptions}
                                     </select>
                                 </div>
                                 <div class="flex items-center gap-3"><label class="text-xs font-bold text-slate-400 w-8">狀態</label>
@@ -1535,9 +1750,26 @@
         }
         
         window.updateMemberInfo = async function(uid) {
-            const role = document.getElementById(`role-sel-${uid}`).value, active = document.getElementById(`status-sel-${uid}`).value === 'true'; if (!role && active) return showToast('啟用帳號前必須指派角色', 'error');
+            const role = document.getElementById(`role-sel-${uid}`).value;
+            const active = document.getElementById(`status-sel-${uid}`).value === 'true'; 
+            if (!role && active) return showToast('啟用帳號前必須指派角色', 'error');
+            
+            let storeId = null;
+            if (role === 'store_staff') {
+                storeId = document.getElementById(`store-sel-${uid}`).value;
+                if (!storeId && active) return showToast('店家人員必須綁定一間門市！', 'error');
+            }
+
             showLoader(true);
-            try { await updateDoc(doc(db, 'workspaces', WORKSPACE, 'members', uid), { role: role || null, active, capabilities: role === 'admin' ? ['storeAdmin'] : [] }); showToast('權限更新成功', 'success'); } catch(e) { showToast('更新失敗', 'error'); }
+            try { 
+                await updateDoc(doc(db, 'workspaces', WORKSPACE, 'members', uid), { 
+                    role: role || null, 
+                    active, 
+                    storeId,
+                    capabilities: role === 'admin' ? ['storeAdmin'] : [] 
+                }); 
+                showToast('權限更新成功', 'success'); 
+            } catch(e) { showToast('更新失敗', 'error'); }
             showLoader(false);
         };
         
@@ -1549,6 +1781,66 @@
                 showLoader(false);
             });
         };
+
+        window.promptImportStores = function() {
+            document.getElementById('import-file').value = ''; document.getElementById('import-file-name').textContent = '支援 .xlsx, .csv 格式';
+            const btnSubmit = document.getElementById('btn-submit-import'); btnSubmit.classList.add('hidden'); btnSubmit.classList.remove('flex');
+            importData = null; document.getElementById('modal-import-stores').classList.remove('hidden');
+        };
+
+        document.getElementById('import-file')?.addEventListener('change', (e) => {
+            const file = e.target.files[0]; if (!file) return; document.getElementById('import-file-name').textContent = `已選取: ${file.name}`;
+            const btnSubmit = document.getElementById('btn-submit-import'); btnSubmit.classList.remove('hidden'); btnSubmit.classList.add('flex');
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, {type: 'array'});
+                    importData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
+                } catch(err) { showToast('檔案解析失敗，請確認格式', 'error'); importData = null; btnSubmit.classList.add('hidden'); btnSubmit.classList.remove('flex'); }
+            };
+            reader.onerror = () => showToast('檔案讀取失敗', 'error'); reader.readAsArrayBuffer(file);
+        });
+
+        document.getElementById('btn-submit-import')?.addEventListener('click', async () => {
+            if (!importData || importData.length === 0) return showToast('檔案內無表格資料', 'error');
+            showLoader(true); let successCount = 0; let failCount = 0;
+            
+            try {
+                for (let row of importData) {
+                    const keys = Object.keys(row);
+                    const getVal = (possibleNames) => {
+                        for(let k of keys) {
+                            const cleanK = k.toString().replace(/\s+/g, '').toLowerCase();
+                            for(let name of possibleNames) { if(cleanK.includes(name.toLowerCase())) return (row[k] !== undefined && row[k] !== null) ? String(row[k]) : ''; }
+                        }
+                        return '';
+                    };
+
+                    let storeCode = getVal(['代碼', '編號', 'code', 'id']).trim().toUpperCase();
+                    let channelType = getVal(['類型', '型態', 'type', 'channel']).trim().toUpperCase(); 
+                    let storeName = getVal(['名稱', '店名', 'name', '門市', '店鋪']).trim();
+                    let storeGrade = getVal(['店格', '級別', '規格', '等級', 'grade']).trim();
+                    let region = getVal(['縣市', '城市', '地區', 'region', 'city', '區']).trim();
+                    let address = getVal(['地址', 'address', 'location', '路', '街']).trim();
+
+                    if (storeName) {
+                        if (!storeCode) storeCode = `S${Math.floor(Math.random()*100000)}`;
+                        if (!address) address = '未提供地址'; if (!region) region = '未提供';
+                        if (!channelType.includes('STS') && !channelType.includes('SES')) channelType = storeName.toUpperCase().includes('STS') ? 'STS' : 'SES';
+                        else channelType = channelType.includes('STS') ? 'STS' : 'SES';
+                        
+                        await addDoc(collection(db, 'workspaces', WORKSPACE, 'stores'), { storeCode, channelType, storeName, storeGrade, region, address, active: true, createdAt: serverTimestamp(), createdBy: currentUser.uid });
+                        successCount++;
+                    } else failCount++;
+                }
+                closeModal('modal-import-stores'); document.getElementById('import-file').value = ''; document.getElementById('btn-submit-import').classList.add('hidden'); importData = null;
+                if (successCount > 0) showToast(`匯入完成！成功: ${successCount} 筆，略過空白: ${failCount} 筆`, 'success');
+                else showToast(`匯入失敗：找不到包含「店名」的欄位`, 'error');
+            } catch (e) { showToast('匯入錯誤: ' + e.message, 'error'); }
+            showLoader(false);
+        });
+
     </script>
 </body>
 </html>
