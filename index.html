@@ -1234,9 +1234,17 @@
 
             try {
                 const prompt = `時間範圍：${timeLabel}，總計：${stats.total}件 (已結案${stats.closed}, 處理中${stats.active}, 待驗收${stats.review}, 待派工/立案${stats.pending})。類別：${JSON.stringify(stats.categories)}。請撰寫營運洞察報告，以繁體中文專業語氣，並必須包含一個 Markdown 格式的 Mermaid pie chart 顯示類別佔比。`;
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, { method: 'POST', body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] }) });
+                // 呼叫 gemini-4-hydrogen 模型生成營運洞察報告與視覺化圖表
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-4-hydrogen:generateContent?key=${geminiApiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
+                });
                 if(!res.ok) throw new Error("API請求失敗");
-                const aiResponse = (await res.json()).candidates?.[0]?.content?.parts?.[0]?.text || '無回覆';
+                const resJson = await res.json();
+                const resParts = resJson.candidates?.[0]?.content?.parts || [];
+                // 過濾掉思考型模型的內部推理區塊 (thought)，僅提取正式報告內容
+                const aiResponse = resParts.filter(p => !p.thought && p.text).map(p => p.text).join('') || resParts[0]?.text || '無回覆';
                 reportContent.innerHTML = renderMarkdownToHTML(aiResponse);
                 try { if(typeof mermaid !== 'undefined') mermaid.init(undefined, document.querySelectorAll('.mermaid')); } catch(err) { console.warn("Mermaid render error"); }
                 currentReportPayload = { timeLabel, markdown: aiResponse, excelData: JSON.stringify(excelData), createdBy: currentUser.uid, createdAt: serverTimestamp() };
